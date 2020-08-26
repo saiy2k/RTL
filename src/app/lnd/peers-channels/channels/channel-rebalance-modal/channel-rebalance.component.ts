@@ -9,19 +9,21 @@ import { Actions } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
 import { faInfoCircle } from '@fortawesome/free-solid-svg-icons';
 
+import { opacityAnimation } from '../../../../shared/animation/opacity-animation';
 import { ChannelInformation } from '../../../../shared/models/alertData';
-import { LoggerService } from '../../../../shared/services/logger.service';
 import { Channel, QueryRoutes, ListInvoices } from '../../../../shared/models/lndModels';
-import { FEE_LIMIT_TYPES, PAGE_SIZE } from '../../../../shared/services/consts-enums-functions';
+import { FEE_LIMIT_TYPES, PAGE_SIZE, ScreenSizeEnum } from '../../../../shared/services/consts-enums-functions';
+import { LoggerService } from '../../../../shared/services/logger.service';
+import { CommonService } from '../../../../shared/services/common.service';
 
 import * as LNDActions from '../../../store/lnd.actions';
-import * as RTLActions from '../../../../store/rtl.actions';
 import * as fromRTLReducer from '../../../../store/rtl.reducers';
 
 @Component({
   selector: 'rtl-channel-rebalance',
   templateUrl: './channel-rebalance.component.html',
-  styleUrls: ['./channel-rebalance.component.scss']
+  styleUrls: ['./channel-rebalance.component.scss'],
+  animations: [opacityAnimation]
 })
 export class ChannelRebalanceComponent implements OnInit, OnDestroy {
   @ViewChild('stepper', { static: false }) stepper: MatVerticalStepper;
@@ -40,14 +42,20 @@ export class ChannelRebalanceComponent implements OnInit, OnDestroy {
   public inputFormLabel = 'Amount to rebalance';
   public feeFormLabel = 'Select rebalance fee';
   public flgEditable = true;
+  public flgShowInfo = false;
+  public stepNumber = 1;
+  public animationDirection = 'forward';
+  public screenSize = '';
+  public screenSizeEnum = ScreenSizeEnum;
   inputFormGroup: FormGroup;
   feeFormGroup: FormGroup;  
   statusFormGroup: FormGroup;  
   private unSubs: Array<Subject<void>> = [new Subject(), new Subject(), new Subject(), new Subject()];
 
-  constructor(public dialogRef: MatDialogRef<ChannelRebalanceComponent>, @Inject(MAT_DIALOG_DATA) public data: ChannelInformation, private logger: LoggerService, private store: Store<fromRTLReducer.RTLState>, private actions$: Actions, private formBuilder: FormBuilder, private decimalPipe: DecimalPipe) { }
+  constructor(public dialogRef: MatDialogRef<ChannelRebalanceComponent>, @Inject(MAT_DIALOG_DATA) public data: ChannelInformation, private logger: LoggerService, private store: Store<fromRTLReducer.RTLState>, private actions$: Actions, private formBuilder: FormBuilder, private decimalPipe: DecimalPipe, private commonService: CommonService) { }
 
   ngOnInit() {
+    this.screenSize = this.commonService.getScreenSize();
     this.selChannel = this.data.channel;
     FEE_LIMIT_TYPES.forEach((FEE_LIMIT_TYPE, i) => {
       if(i > 0) {
@@ -186,6 +194,15 @@ export class ChannelRebalanceComponent implements OnInit, OnDestroy {
   filterActiveChannels() {
     this.filteredActiveChannels = this.activeChannels.filter(channel => channel.remote_balance >= this.inputFormGroup.controls.rebalanceAmount.value && channel.chan_id !== this.selChannel.chan_id);
   }
+
+  showInfo() {
+    this.flgShowInfo = true;
+  }
+
+  onStepChanged(index: number) {
+    this.animationDirection = index < this.stepNumber ? 'backward' : 'forward';
+    this.stepNumber = index;
+  }  
 
   onClose() {
     this.dialogRef.close(false);
