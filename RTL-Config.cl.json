@@ -1,0 +1,35 @@
+{
+  "port": "3000",
+  "defaultNodeIndex": 1,
+  "SSO": {
+    "rtlSSO": 0,
+    "rtlCookiePath": "",
+    "logoutRedirectLink": ""
+  },
+  "nodes": [
+    {
+      "index": 1,
+      "lnNode": "Node 1",
+      "lnImplementation": "CLT",
+      "Authentication": {
+        "macaroonPath": "/Users/saiy2k/btc/c-lightning-REST/certs",
+        "configPath": "C:\\Users\\xyz\\AppData\\Local\\Lnd\\lnd.conf",
+        "swapMacaroonPath": "C:\\Users\\xyz\\AppData\\Local\\Loop\\mainnet",
+        "boltzMacaroonPath": "C:\\Users\\xyz\\AppData\\Boltz\\mainnet"
+      },
+      "Settings": {
+        "userPersona": "OPERATOR",
+        "themeMode": "DAY",
+        "themeColor": "PURPLE",
+        "channelBackupPath": "C:\\Users\\xyz\\backup\\node-1",
+        "logLevel": "ERROR",
+        "lnServerUrl": "https://localhost:3001",
+        "swapServerUrl": "https://localhost:8081",
+        "boltzServerUrl": "https://localhost:9003",
+        "fiatConversion": false,
+        "enableOffers": true
+      }
+    }
+  ],
+  "multiPassHashed": "d74ff0ee8da3b9806b18c877dbf29bbde50b5bd8e4dad7a3a725000feb82e8f1"
+}

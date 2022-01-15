@@ -6,15 +6,15 @@
 
         <span class="cc-data-value" *ngIf="currencyUnit === currencyUnitEnum.SATS">
           {{value.dataValue | number}}
-          <mat-icon [matTooltip]="value.tooltip" matTooltipPosition="below" class='info-icon mt-4px' style="vertical-align: middle">info_outline</mat-icon>
+          <mat-icon *ngIf="value.tooltip" [matTooltip]="value.tooltip" matTooltipPosition="below" class="info-icon" style="vertical-align: middle">info_outline</mat-icon>
         </span>
         <span class="cc-data-value" *ngIf="currencyUnit === currencyUnitEnum.BTC">
           {{value[currencyUnitEnum.BTC] | number:currencyUnitFormats.BTC}}
-          <mat-icon [matTooltip]="value.tooltip" matTooltipPosition="below" class='info-icon mt-4px' style="vertical-align: middle">info_outline</mat-icon>
+          <mat-icon *ngIf="value.tooltip" [matTooltip]="value.tooltip" matTooltipPosition="below" class="info-icon" style="vertical-align: middle">info_outline</mat-icon>
         </span>
         <span class="cc-data-value" *ngIf="fiatConversion && currencyUnit !== currencyUnitEnum.SATS && currencyUnit !== currencyUnitEnum.BTC && conversionErrorMsg === ''">
           {{value[currencyUnitEnum.OTHER] | number:currencyUnitFormats.OTHER}}
-          <mat-icon [matTooltip]="value.tooltip" matTooltipPosition="below" class='info-icon mt-4px' style="vertical-align: middle">info_outline</mat-icon>
+          <mat-icon *ngIf="value.tooltip" [matTooltip]="value.tooltip" matTooltipPosition="below" class="info-icon" style="vertical-align: middle">info_outline</mat-icon>
         </span>
       </div>
     </div>

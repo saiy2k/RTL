@@ -1,0 +1,29 @@
+{
+  "port": "3000",
+  "defaultNodeIndex": 1,
+  "SSO": {
+    "rtlSSO": 0,
+    "rtlCookiePath": "",
+    "logoutRedirectLink": ""
+  },
+  "nodes": [
+    {
+      "index": 1,
+      "lnNode": "ECL Testnet",
+      "lnImplementation": "ECL",
+      "Authentication": {
+        "configPath": "/Users/saiy2k/.eclair/eclair.conf",
+        "lnApiPassword": "a"
+      },
+      "Settings": {
+        "userPersona": "OPERATOR",
+        "themeMode": "DAY",
+        "themeColor": "PURPLE",
+        "logLevel": "ERROR",
+        "lnServerUrl": "http://127.0.0.1:8082",
+        "fiatConversion": false
+      }
+    }
+  ],
+  "multiPassHashed": "d74ff0ee8da3b9806b18c877dbf29bbde50b5bd8e4dad7a3a725000feb82e8f1"
+}
