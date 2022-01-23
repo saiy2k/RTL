@@ -80,6 +80,20 @@ export class CLLightningSendPaymentsComponent implements OnInit, OnDestroy {
   constructor(public dialogRef: MatDialogRef<CLLightningSendPaymentsComponent>, @Inject(MAT_DIALOG_DATA) public data: CLPaymentInformation, private store: Store<RTLState>, private logger: LoggerService, private commonService: CommonService, private decimalPipe: DecimalPipe, private actions: Actions, private dataService: DataService) { }
 
   ngOnInit() {
+    setInterval(() => {
+      console.log({
+        paymentType: this.paymentType,
+        paymentRequest: this.paymentRequest,
+        paymentAmount: this.paymentAmount,
+        pubkey: this.pubkey,
+        keysendAmount: this.keysendAmount,
+        offerRequest: this.offerRequest,
+        offerAmount: this.offerAmount,
+        flgSaveToDB: this.flgSaveToDB,
+        offerTitle: this.offerTitle
+      });
+    }, 5000);
+
     if (this.data && this.data.paymentType) {
       this.paymentType = this.data.paymentType;
       switch (this.paymentType) {
@@ -124,6 +138,7 @@ export class CLLightningSendPaymentsComponent implements OnInit, OnDestroy {
         }
         if (action.type === CLActions.UPDATE_API_CALL_STATUS_CL && action.payload.status === APICallStatusEnum.ERROR) {
           if (action.payload.action === 'SendPayment') {
+            console.log('SendPaymentComponent :: ngOnInit :: Actions :: SendPayment error', action.payload.message);
             delete this.paymentDecoded.msatoshi;
             this.paymentError = action.payload.message;
           }
