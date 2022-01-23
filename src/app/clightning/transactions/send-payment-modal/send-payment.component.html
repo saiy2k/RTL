@@ -12,11 +12,11 @@
         <mat-radio-button fxFlex="20" tabindex="2" value="{{paymentTypes.KEYSEND}}">Keysend</mat-radio-button>
         <mat-radio-button *ngIf="selNode.enableOffers" fxFlex="20" tabindex="3" value="{{paymentTypes.OFFER}}">Offer</mat-radio-button>
       </mat-radio-group>
-      <form fxLayoutAlign="space-between stretch" fxLayout="column" #sendPaymentForm="ngForm" (submit)="onSendPayment()" (reset)="resetData()">
+      <form fxLayoutAlign="space-between stretch" fxLayout="column" id="sendPaymentForm" #sendPaymentForm="ngForm" (submit)="onSendPayment()" (reset)="resetData()">
         <ng-container *ngTemplateOutlet="paymentType === paymentTypes.KEYSEND ? keysendBlock : paymentType === paymentTypes.OFFER ? offerBlock : invoiceBlock"></ng-container>
         <div fxFlex="100" class="alert alert-danger mt-1" *ngIf="paymentError !== ''">
           <fa-icon [icon]="faExclamationTriangle" class="mr-1 alert-icon"></fa-icon>
-          <span *ngIf="paymentError !== ''">{{paymentError}}</span>
+          <span *ngIf="paymentError !== ''" id="paymentErrorSpan">{{paymentError}}</span>
         </div>
         <div class="mt-2" fxLayout="row" fxLayoutAlign="end center">
           <button class="mr-1" mat-button color="primary" tabindex="9" type="reset">Clear Fields</button>
@@ -27,13 +27,13 @@
   </div>
 </div>
 <ng-template #invoiceBlock>
-  <mat-form-field fxFlex="100">
+  <mat-form-field fxFlex="100" id="paymentRequestField">
     <textarea autoFocus matInput placeholder="Payment Request" rows="4" name="paymentRequest" tabindex="4" [ngModel]="paymentRequest" (ngModelChange)="onPaymentRequestEntry($event)" (matTextareaAutosize)="true" required #paymentReq="ngModel"></textarea>
     <mat-hint *ngIf="paymentRequest && paymentDecodedHint !== ''">{{paymentDecodedHint}}</mat-hint>
     <mat-error *ngIf="!paymentRequest">Payment request is required.</mat-error>
     <mat-error *ngIf="paymentReq.errors?.decodeError">{{paymentDecodedHint}}</mat-error>
   </mat-form-field>
-  <mat-form-field fxFlex="100" *ngIf="zeroAmtInvoice">
+  <mat-form-field fxFlex="100" *ngIf="zeroAmtInvoice" id="paymentAmountField">
     <input matInput placeholder="Amount (Sats)" name="amount" [(ngModel)]="paymentAmount" (change)="onAmountChange($event)" tabindex="5" required #paymentAmt="ngModel">
     <mat-hint>It is a zero amount invoice, enter amount to be paid.</mat-hint>
     <mat-error *ngIf="!paymentAmount">Payment amount is required.</mat-error>
