@@ -83,10 +83,11 @@ describe('CLLightningSendPaymentsComponent', () => {
     expect(storeSpy).toHaveBeenCalledTimes(2);
   });
 
+  // TODO: Test only if current form is reset and values in other forms are retained
   it('should reset the component', () => {
 
-    // TODO:?
-    // Should assign fake data to the fields, before resetting?
+    // TODO:
+    //populateComponentFields();
 
     component.resetData();
 
@@ -211,35 +212,71 @@ describe('CLLightningSendPaymentsComponent', () => {
     expect(component.offerInvoice).toBe(null);
   });
 
-  // Clear field and Close button
+  // Misc
+  it('should clear the current form values on tapping Clear fields', () => {
+  });
+
+  it('should close modal on tapping close button', () => {
+  });
+
   /** II. UI Controls - End */
 
 
   /**
    * III. Function wise Test coverage - Begin
    */
-  it('should set proper amount in decoded object in onAmountChange()', () => {
+  it('onAmountChange(): should set proper amount in decoded object', () => {
 
-    const invoiceInputVal = 123;
+    let invoiceInputVal, offerInputVal;
+
     component.paymentType = PaymentTypes.INVOICE;
-    component.onAmountChange({
-      target: {
-        value: invoiceInputVal
-      }
-    });
+    invoiceInputVal = 123;
+    component.onAmountChange({ target: { value: invoiceInputVal } });
     expect(component.paymentDecoded.msatoshi).toBe(invoiceInputVal * 1000);
 
-    const offerInputVal = 20;
+    invoiceInputVal = 125;
+    component.onAmountChange({ target: { value: invoiceInputVal } });
+    expect(component.paymentDecoded.msatoshi).toBe(invoiceInputVal * 1000);
+
     component.paymentType = PaymentTypes.OFFER;
-    component.onAmountChange({
-      target: {
-        value: offerInputVal
-      }
-    });
+    offerInputVal = 20;
+    component.onAmountChange({ target: { value: offerInputVal } });
+    expect(component.offerDecoded.amount).toBe(offerInputVal * 1000);
+    expect(component.offerDecoded.amount_msat).toBe((offerInputVal * 1000) + 'mast');
+
+    offerInputVal = 28;
+    component.onAmountChange({ target: { value: offerInputVal } });
     expect(component.offerDecoded.amount).toBe(offerInputVal * 1000);
     expect(component.offerDecoded.amount_msat).toBe((offerInputVal * 1000) + 'mast');
 
   });
+
+  it('keysendPayment(): should dispatch proper action', () => {
+
+    const storeSpy = spyOn(store, 'dispatch').and.callThrough();
+    component.pubkey = 'pubkey';
+    component.keysendAmount = 150;
+    component.keysendPayment();
+
+    const expectedkeysendPaymentPayload = {
+      uiMessage: UI_MESSAGES.SEND_KEYSEND, paymentType: PaymentTypes.KEYSEND, fromDialog: true,
+      pubkey: 'pubkey', amount: 150000
+    };
+    expect(storeSpy.calls.all()[0].args[0]).toEqual(sendPayment({ payload: expectedkeysendPaymentPayload }));
+    expect(storeSpy).toHaveBeenCalledTimes(1);
+
+  });
+
+  // ngOnInit()
+  // onSendPayment()
+  // keysendAmount()
+  // sendPayment()
+  // onPaymentRequestEntry
+  // resetOfferDetails
+  // resetInvoiceDetails
+  // onPaymentTypeChange
+  // setOfferDecodedDetails
+  // setPaymentDecodedDetails
   /** III. Function wise Test coverage - End */
 
 
@@ -265,82 +302,25 @@ describe('CLLightningSendPaymentsComponent', () => {
   });
    */
 
-/*
-  it('should send payment buttons (Invoice, ZeroAmt) work as expected', () => {
-    //const storeSpy = spyOn(store, 'dispatch').and.callThrough();
-    const dataServiceSpy = spyOn(mockDataService, 'decodePayment').and.callThrough();
-    component.zeroAmtInvoice = true;
-    component.paymentAmount = 600;
-    component.paymentRequest = 'lntb4u1psvdzaypp555uks3f6774kl3vdy2dfr00j847pyxtrqelsdnczuxnmtqv99srsdpy23jhxarfdenjqmn8wfuzq3txvejkxarnyq6qcqp2sp5xjzu6pz2sf8x4v8nmr58kjdm6k05etjfq9c96mwkhzl0g9j7sjkqrzjq28vwprzypa40c75myejm8s2aenkeykcnd7flvy9plp2yjq56nvrc8ss5cqqqzgqqqqqqqlgqqqqqqgq9q9qy9qsqpt6u4rwfrck3tmpn54kdxjx3xdch62t5wype2f44mmlar07y749xt9elhfhf6dnlfk2tjwg3qpy8njh6remphfcc0630aq38j0s3hrgpv4eel3';
+  it('should complete subscriptions on ngOnDestroy', () => {
+    const spy = spyOn(component['unSubs'][1], 'complete');
+    component.ngOnDestroy();
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+
+  afterEach(() => {
+    TestBed.resetTestingModule();
+  });
+
+  function populateComponentFields() {
+    component.paymentRequest = 'paymentRequest';
     component.paymentDecoded = {
-      destination: '031844beb16bf8dd8c7bc30588b8c37b36e62b71c6e812e9b6d976c0a57e151be2', payment_hash: 'a53968453af7ab6fc58d229a91bdf23d7c121963067f06cf02e1a7b581852c07', timestamp: '1623624612', expiry: '3600',
-      description: 'Testing ngrx Effects 4', description_hash: '', fallback_addr: '', cltv_expiry: '10', route_hints: [{ hop_hints: [{ node_id: '028ec70462207b57e3d4d9332d9e0aee676c92d89b7c9fb0850fc2a24814d4d83c', chan_id: '2166413939696009216', fee_base_msat: 1000, fee_proportional_millionths: 1, cltv_expiry_delta: 40 }] }],
-      payment_addr: 'NIXNBEqCTmqw89joe0m71Z9MrkkBcF1t1ri+9BZehKw=', num_msat: '400000', features: { 9: { name: 'tlv-onion', is_required: false, is_known: true }, 15: { name: 'payment-addr', is_required: false, is_known: true }, 17: { name: 'multi-path-payments', is_required: false, is_known: true } }
+      msatoshi: 1000
     };
-    const sendButton = fixture.debugElement.nativeElement.querySelector('#sendBtn');
-    sendButton.click();
-    const expectedSendPaymentPayload = {
-      uiMessage: UI_MESSAGES.SEND_PAYMENT, outgoingChannel: null, feeLimitType: 'none', feeLimit: null, fromDialog: true,
-      paymentReq: 'lntb4u1psvdzaypp555uks3f6774kl3vdy2dfr00j847pyxtrqelsdnczuxnmtqv99srsdpy23jhxarfdenjqmn8wfuzq3txvejkxarnyq6qcqp2sp5xjzu6pz2sf8x4v8nmr58kjdm6k05etjfq9c96mwkhzl0g9j7sjkqrzjq28vwprzypa40c75myejm8s2aenkeykcnd7flvy9plp2yjq56nvrc8ss5cqqqzgqqqqqqqlgqqqqqqgq9q9qy9qsqpt6u4rwfrck3tmpn54kdxjx3xdch62t5wype2f44mmlar07y749xt9elhfhf6dnlfk2tjwg3qpy8njh6remphfcc0630aq38j0s3hrgpv4eel3'
-    };
-//expect(component.paymentDecoded).toEqual(paymentDecoded);
-//expect(storeSpy.calls.all()[0].args[0]).toEqual(sendPayment({ payload: expectedSendPaymentPayload }));
-    expect(dataServiceSpy).toHaveBeenCalledTimes(1);
-  });
- */
-
-
-/*
-// Not to test in front end. As the logic happens in backend
-  it('should decode bolt11 properly', () => {
-    //component.paymentRequest = 'lntb100u1ps7e3zdpp5epqx9v00ptsavrm56v4hr66akgvrswh4mtsm42wx4rg7mxdfga8sdq523jhxapqf9h8vmmfvdjscqp2sp52mhqxcux05vpccgf50zvjvln6vzhkv369jwt0scu6zjhfg2h988qrzjqt4dhk0824eh29salzmyvam22379e0pwjkesw8kgz4fl3mpvagaccgy4vcqqqxcqqqqqqqlgqqqqqqgq9qrzjqgq20usw2yzfxc7t0u4qse07qujxf4rfmjs2cdxf2jan6j649dhf2gykavqqq8qqqyqqqqlgqqqqqqgq9q9qyyssqy8tp5d5r7w89yttrphlfwd5p4nyyl4gyjkgw6mmy3jp3kv8lqy9yc5vw3s4ht0t7tpykv74jhp49a46u4qm06gp43dx4hydvghwgfhgpwpwqj5';
-    //component.onPaymentRequestEntry(component.paymentRequest);
-    //fixture.detectChanges();
-
-    //const hintDiv = fixture.debugElement.nativeElement.querySelector('#paymentRequestField > div > div.mat-form-field-subscript-wrapper > div > mat-hint');
-    //console.log('hintDiv', hintDiv !== null); // Null. Doing document.querySelector('#paymentRequestField > div > div.mat-form-field-subscript-wrapper > div > mat-hint') from Chrome console returns the object though
-    // expect(component.paymentDecodedHint).toEqual('Sending: 10,000 Sats | Memo: Test Invoice2'); // 'component.paymentDecodedHint' turns out to be empty string
-    // expect(hintDiv.textContent).toEqual('Sending: 10,000 Sats | Memo: Test Invoice1'); //hintDiv is null
-  });
- */
-
-    /*
-  it('should change respective controls for Keysend', () => {
-    component.paymentType = PaymentTypes.KEYSEND;
-  });
-
-  it('should change respective controls for Offer', () => {
-    component.paymentType = PaymentTypes.OFFER;
-  });
-
-  it('should test for zero value invoice', () => {
-    // lntb1ps7e5xypp5d7j5vnzdxk2fjkrkg4gyxmw4haa375fluzps0eajmhchjle89xkqdqg0fjhyme3xqyjw5qcqp2sp5x4c6me8rryg650d8c22l0w76n48ttvk5r5cy2p6403rve895kfaqrzjqt4dhk0824eh29salzmyvam22379e0pwjkesw8kgz4fl3mpvagaccgy4vcqqqxcqqqqqqqlgqqqqqqgq9qrzjqgq20usw2yzfxc7t0u4qse07qujxf4rfmjs2cdxf2jan6j649dhf2gykavqqq8qqqyqqqqlgqqqqqqgq9q9qyyssqjshru5tmyqkgfcrp8yd770lz077vrw9uxfvmxzc9pdl2y34qr46y2sp6yfcw33wq79v2m3m5a2qz6h4qm7tayc5fg05c9l955js6xucqkx050w
-  });
-     */
-
-    /*
-  it('should decode the zero amount payment when send payment clicked but payment is not decoded yet', () => {
-    const onPaymentRequestEntrySpy = spyOn(component, 'onPaymentRequestEntry').and.callThrough();
-    component.zeroAmtInvoice = false;
-    component.paymentRequest = 'lntb1ps8neg8pp5u897fhxxzg068jzt59tgqe458jt7srjtd6k93x4t9ts3hqdkd2nsdpj23jhxarfdenjq3tdwp68jgzfdemx76trv5sxvmmjypxyu3pqxvxqyd9uqcqp2sp5feg8wftf3fasmp2fe86kehyqfat2xcrjvunare7rrn28yjdrw8yqrzjq2m42d94jc8fxjzq675cmhr7fpjg0vr6238xutxp9p78yeaucwjfjxgpcuqqqxsqqyqqqqlgqqqqqqgq9q9qy9qsqwf6a4w9uqthm3aslwt03ucqt03e8j2atxrmt022d5kaw65cmqc3pnghz5xmsh2tlz9syhaulrxtwmvh3gdx9j33gec6yrycwh2g05qgqdnftgk';
-    component.paymentDecoded = {};
-    component.onSendPayment();
-    fixture.detectChanges();
-    expect(component.zeroAmtInvoice).toBe(true);
-//expect(component.filteredMinAmtActvChannels).toEqual(component.activeChannels);
-    expect(onPaymentRequestEntrySpy).toHaveBeenCalledTimes(1);
-  });
-     */
-
-
-it('should complete subscriptions on ngOnDestroy', () => {
-  const spy = spyOn(component['unSubs'][1], 'complete');
-  component.ngOnDestroy();
-  expect(spy).toHaveBeenCalledTimes(1);
-});
-
-afterEach(() => {
-  TestBed.resetTestingModule();
-});
+    component.selActiveChannel = {};
+    component.feeLimit = {};
+    component.selFeeLimitType = FEE_LIMIT_TYPES[1];
+    // TODO:
+  }
 
 });
