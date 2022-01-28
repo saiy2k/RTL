@@ -83,15 +83,43 @@ describe('CLLightningSendPaymentsComponent', () => {
     expect(storeSpy).toHaveBeenCalledTimes(2);
   });
 
-  // TODO: Test only if current form is reset and values in other forms are retained
-  it('should reset the component', () => {
+  it('should reset Keysend fields', () => {
 
-    // TODO:
-    //populateComponentFields();
-
+    populateComponentFields();
+    component.paymentType = PaymentTypes.KEYSEND;
     component.resetData();
 
-    // Invoice
+    expect(component.pubkey).toEqual('');
+    expect(component.keysendAmount).toBe(null);
+
+    expect(component.paymentRequest).toEqual('paymentRequest');
+    expect(component.paymentDecoded).toEqual({ msatoshi: 2000 });
+    expect(component.selActiveChannel).toEqual({});
+    expect(component.feeLimit).toEqual({});
+    expect(component.selFeeLimitType).toEqual(FEE_LIMIT_TYPES[1]);
+    expect(component.paymentAmount).toEqual(2);
+    expect(component.paymentDecodedHint).toEqual('InvoiceHint');
+    expect(component.zeroAmtInvoice).toEqual(true);
+
+    expect(component.offerRequest).toEqual('offerRequest');
+    expect(component.offerDecoded).toEqual({ amount: 2000, amount_msat: '2000msat'});
+    expect(component.flgSaveToDB).toEqual(true);
+    expect(component.offerInvoice).toEqual({ invoice: 'invoice', changes: {} });
+    expect(component.offerAmount).toEqual(2);
+    expect(component.offerDecodedHint).toEqual('OfferHint');
+    expect(component.zeroAmtOffer).toEqual(true);
+
+    expect(component.paymentError).toEqual('');
+    // expect(component.paymentReq.control.errors).toBe(null); //can't access Private var
+
+  });
+
+  it('should reset Invoice fields', () => {
+
+    populateComponentFields();
+    component.paymentType = PaymentTypes.INVOICE;
+    component.resetData();
+
     expect(component.paymentRequest).toEqual('');
     expect(component.paymentDecoded).toEqual({});
     expect(component.selActiveChannel).toBe(null);
@@ -100,11 +128,29 @@ describe('CLLightningSendPaymentsComponent', () => {
     expect(component.paymentAmount).toBe(null);
     expect(component.zeroAmtInvoice).toBe(false);
 
-    // Keysend
-    expect(component.pubkey).toEqual('');
-    expect(component.keysendAmount).toBe(null);
+    expect(component.pubkey).toEqual('pubkey');
+    expect(component.keysendAmount).toBe(2);
 
-    // Offer
+    expect(component.offerRequest).toEqual('offerRequest');
+    expect(component.offerDecoded).toEqual({ amount: 2000, amount_msat: '2000msat'});
+    expect(component.flgSaveToDB).toEqual(true);
+    expect(component.offerInvoice).toEqual({ invoice: 'invoice', changes: {} });
+    expect(component.offerAmount).toEqual(2);
+    expect(component.offerDecodedHint).toEqual('OfferHint');
+    expect(component.zeroAmtOffer).toEqual(true);
+
+    expect(component.paymentError).toEqual('');
+    // expect(component.paymentReq.control.errors).toBe(null); //can't access Private var
+    expect(component.paymentDecodedHint).toEqual('');
+
+  });
+
+  it('should reset Offer fields', () => {
+
+    populateComponentFields();
+    component.paymentType = PaymentTypes.OFFER;
+    component.resetData();
+
     expect(component.offerRequest).toEqual('');
     expect(component.offerDecoded).toEqual({});
     expect(component.flgSaveToDB).toBe(false);
@@ -113,10 +159,20 @@ describe('CLLightningSendPaymentsComponent', () => {
     expect(component.offerDecodedHint).toEqual('');
     expect(component.zeroAmtOffer).toBe(false);
 
-    // Common
+    expect(component.paymentRequest).toEqual('paymentRequest');
+    expect(component.paymentDecoded).toEqual({ msatoshi: 2000 });
+    expect(component.selActiveChannel).toEqual({});
+    expect(component.feeLimit).toEqual({});
+    expect(component.selFeeLimitType).toEqual(FEE_LIMIT_TYPES[1]);
+    expect(component.paymentAmount).toEqual(2);
+    expect(component.paymentDecodedHint).toEqual('InvoiceHint');
+    expect(component.zeroAmtInvoice).toEqual(true);
+
+    expect(component.pubkey).toEqual('pubkey');
+    expect(component.keysendAmount).toBe(2);
+
     expect(component.paymentError).toEqual('');
     // expect(component.paymentReq.control.errors).toBe(null); //can't access Private var
-    expect(component.paymentDecodedHint).toEqual('');
 
   });
   /** I. Page Init, Reset - End */
@@ -126,18 +182,31 @@ describe('CLLightningSendPaymentsComponent', () => {
    */
   // Invoice
   it('Invoice: should show only Payment request field, when Invoice is selected', () => {
+    // expect request field to be true
+    // expect amount field to be null
   });
 
   it('Invoice: should show Sats and Memo, when valid payment Request is pasted', () => {
+    // paste valid Invoice
+    // expect hint to show Sats and Meno
   });
 
   it('Invoice: should show "Invalid bolt11: bad bech32 string", when invalid payment Request is pasted and Send Payment is clicked', () => {
+    // paste valid Invoice
+    // expect error to be true
+    // expect error to show error message
   });
 
   it('Invoice: should show Payment request field and Amount field, when zero amount Invoice is pasted', () => {
+    // paste zero amount Invoice
+    // expect amount field to be true
   });
 
   it('Invoice: should enter only numbers in Amount field', () => {
+    // paste zero amount Invoice
+    // expect amount field to be true
+    // send chars
+    // expect not to appear
   });
 
   // Keysend
@@ -313,14 +382,41 @@ describe('CLLightningSendPaymentsComponent', () => {
   });
 
   function populateComponentFields() {
+    // Invoice fields
     component.paymentRequest = 'paymentRequest';
     component.paymentDecoded = {
-      msatoshi: 1000
+      msatoshi: 2000
     };
     component.selActiveChannel = {};
     component.feeLimit = {};
     component.selFeeLimitType = FEE_LIMIT_TYPES[1];
+    component.paymentAmount = 2;
+    component.paymentDecodedHint = 'InvoiceHint';
+    component.zeroAmtInvoice = true;
+
+    // Keysend fields
+    component.pubkey = 'pubkey';
+    component.keysendAmount = 2;
+
+    // Offer fields
+    component.offerRequest = 'offerRequest';
+    component.offerDecoded = {
+      amount: 2000,
+      amount_msat: '2000msat'
+    };
+    component.flgSaveToDB = true;
+    component.offerInvoice  = {
+      invoice: 'invoice',
+      changes: {}
+    };
+    component.offerAmount = 2;
+    component.offerDecodedHint = 'OfferHint';
+    component.zeroAmtOffer = true;
+
+    // Common
+    component.paymentError = 'Error';
     // TODO:
+    //component.paymentReq.control.setErrors([]);
   }
 
 });
