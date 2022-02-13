@@ -111,6 +111,7 @@ describe('CLLightningSendPaymentsComponent', () => {
     expect(component.zeroAmtOffer).toEqual(true);
 
     expect(component.paymentError).toEqual('');
+    // TODO:
     // expect(component.paymentReq.control.errors).toBe(null); //can't access Private var
 
   });
@@ -637,14 +638,14 @@ describe('CLLightningSendPaymentsComponent', () => {
     component.paymentType = PaymentTypes.KEYSEND;
 
     [
-      { key: '', amount: null },
-      { key: '', amount: -1 },
-      { key: '', amount: 0 },
-      { key: '', amount: 1 },
-      { key: ' ', amount: 10 }
+      { pukey: '', keysendAmount: null },
+      { pukey: '', keysendAmount: -1 },
+      { pukey: '', keysendAmount: 0 },
+      { pukey: '', keysendAmount: 1 },
+      { pukey: ' ', keysendAmount: 10 }
     ].map(ip => {
-      component.pubkey = ip.key;
-      component.keysendAmount = ip.amount;
+      component.pubkey = ip.pukey;
+      component.keysendAmount = ip.keysendAmount;
       component.onSendPayment();
       expect(compSpy).not.toHaveBeenCalled();
     });
@@ -750,12 +751,93 @@ describe('CLLightningSendPaymentsComponent', () => {
   it('onSendPayment() :: INVOICE: should handle bolt12 Offer scenario and throw error', () => {
   });
 
-  // sendPayment()
-  // onPaymentRequestEntry
-  // resetOfferDetails
-  // resetInvoiceDetails
-  // setOfferDecodedDetails
-  // setPaymentDecodedDetails
+  it('onSendPayment() :: INVOICE: should handle decoding of Invoice :: calling setPaymentDecodedDetails()', () => {
+  });
+
+  it('onSendPayment() :: OFFER: should handle negative inputs', () => {
+  });
+
+  it('onSendPayment() :: OFFER: should handle Decoded offers', () => {
+  });
+
+  it('onSendPayment() :: OFFER: should handle unprocessed Invoices', () => {
+  });
+
+  it('onSendPayment() :: OFFER: should handle bolt11 Invoice options passed to offer', () => {
+  });
+
+  it('onSendPayment() :: OFFER: should handle decoding of Offer :: calling setOfferDecodedDetails()', () => {
+  });
+
+  it('onSendPayment() :: OFFER: should handle unprocessed Offers', () => {
+  });
+
+  it('sendPayment() :: INVOICE: should handle zero amount invoice', () => {
+  });
+
+  it('sendPayment() :: INVOICE: should handle regular (non zero) invoice', () => {
+  });
+
+  it('sendPayment() :: OFFER: should fetch unfetched zero amount offer', () => {
+  });
+
+  it('sendPayment() :: OFFER: should fetch unfetched regular (non zero) offer', () => {
+  });
+
+  it('sendPayment() :: OFFER: should handle decoded offer', () => {
+  });
+
+  it('onPaymentRequestEntry() :: INVOICE: should just reset Decoded Invoice, when event length < 100', () => {
+  });
+
+  it('onPaymentRequestEntry() :: INVOICE: should reset Decoded Invoice and decode new Request, when event length > 100', () => {
+  });
+
+  it('onPaymentRequestEntry() :: INVOICE: should handle bolt12 offer selection mismatch', () => {
+  });
+
+  it('onPaymentRequestEntry() :: OFFER: should just reset Decoded Offer, when event length < 100 ', () => {
+  });
+
+  it('onPaymentRequestEntry() :: OFFER: should reset Decoded Offer and decode new Request, when event length > 100', () => {
+  });
+
+  it('onPaymentRequestEntry() :: OFFER: should handle bolt11 invoice selection mismatch', () => {
+  });
+
+  it('resetOfferDetails() :: should reset all offer related fields', () => {
+  });
+
+  it('resetInvoiceDetails() :: should reset all invoice related fields', () => {
+  });
+
+  it('onPaymentTypeChange() :: should reset errors and hints', () => {
+  });
+
+  it('setOfferDecodedDetails() :: should handle zero amount offer', () => {
+  });
+
+  it('setOfferDecodedDetails() :: should handle regular (non zero) amount offer', () => {
+  });
+
+  it('setOfferDecodedDetails() :: should show proper Sats and Description when fiatConversion is enabled', () => {
+  });
+
+  it('setOfferDecodedDetails() :: should show error when fiatConversion is enabled, but the conversion fails', () => {
+  });
+
+  it('setPaymentDecodedDetails() :: should show proper hint for zero amount Invoice', () => {
+  });
+
+  it('setPaymentDecodedDetails() :: should handle proper hint for regular (non zero) Invoice', () => {
+  });
+
+  it('setPaymentDecodedDetails() :: should show proper Sats and Description when fiatConversion is enabled', () => {
+  });
+
+  it('setPaymentDecodedDetails() :: should show error when fiatConversion is enabled, but the conversion fails', () => {
+  });
+
   /** III. Function wise Test coverage - End */
 
 
