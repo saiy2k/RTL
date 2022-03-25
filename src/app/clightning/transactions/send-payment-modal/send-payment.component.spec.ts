@@ -21,9 +21,10 @@ import { PaymentTypes, FEE_LIMIT_TYPES, UI_MESSAGES } from '../../../shared/serv
 import { mockRTLStoreState } from '../../../shared/test-helpers/test-data';
 
 import { RTLState } from '../../../store/rtl.state';
-import { sendPayment } from '../../store/cl.actions';
+import { sendPayment, fetchOfferInvoice } from '../../store/cl.actions';
 import { SelNodeChild } from '../../../shared/models/RTLconfig';
 import { channels } from '../../store/cl.selector';
+import {FormControl} from '@angular/forms';
 
 /**
  * Testing Plan
@@ -85,7 +86,6 @@ describe('CLLightningSendPaymentsComponent', () => {
   });
 
   it('should reset only Keysend fields', () => {
-
     populateComponentFields();
     component.paymentType = PaymentTypes.KEYSEND;
     component.resetData();
@@ -103,7 +103,7 @@ describe('CLLightningSendPaymentsComponent', () => {
     expect(component.zeroAmtInvoice).toEqual(true);
 
     expect(component.offerRequest).toEqual('offerRequest');
-    expect(component.offerDecoded).toEqual({ amount: 2000, amount_msat: '2000msat'});
+    expect(component.offerDecoded).toEqual({ amount: 2000, amount_msat: '2000msat' });
     expect(component.flgSaveToDB).toEqual(true);
     expect(component.offerInvoice).toEqual({ invoice: 'invoice', changes: {} });
     expect(component.offerAmount).toEqual(2);
@@ -113,11 +113,9 @@ describe('CLLightningSendPaymentsComponent', () => {
     expect(component.paymentError).toEqual('');
     // TODO:
     // expect(component.paymentReq.control.errors).toBe(null); //can't access Private var
-
   });
 
   it('should reset only Invoice fields', () => {
-
     populateComponentFields();
     component.paymentType = PaymentTypes.INVOICE;
     component.resetData();
@@ -134,7 +132,7 @@ describe('CLLightningSendPaymentsComponent', () => {
     expect(component.keysendAmount).toBe(2);
 
     expect(component.offerRequest).toEqual('offerRequest');
-    expect(component.offerDecoded).toEqual({ amount: 2000, amount_msat: '2000msat'});
+    expect(component.offerDecoded).toEqual({ amount: 2000, amount_msat: '2000msat' });
     expect(component.flgSaveToDB).toEqual(true);
     expect(component.offerInvoice).toEqual({ invoice: 'invoice', changes: {} });
     expect(component.offerAmount).toEqual(2);
@@ -144,11 +142,9 @@ describe('CLLightningSendPaymentsComponent', () => {
     expect(component.paymentError).toEqual('');
     // expect(component.paymentReq.control.errors).toBe(null); //can't access Private var
     expect(component.paymentDecodedHint).toEqual('');
-
   });
 
   it('should reset only Offer fields', () => {
-
     populateComponentFields();
     component.paymentType = PaymentTypes.OFFER;
     component.resetData();
@@ -175,21 +171,17 @@ describe('CLLightningSendPaymentsComponent', () => {
 
     expect(component.paymentError).toEqual('');
     // expect(component.paymentReq.control.errors).toBe(null); //can't access Private var
-
   });
-  /** I. Page Init, Reset - End */
+  /**
+   * I. Page Init, Reset - End
+   */
 
   /**
    * II. UI Controls - Begin
    */
 
-  //TODO:
-  // Test for Enable offers
-
   // Invoice
   it('Invoice: should show only Payment request field, when Invoice is selected', () => {
-
-    // So as to show the radiogroup
     component.isCompatibleVersion = true;
     fixture.detectChanges();
 
@@ -200,11 +192,9 @@ describe('CLLightningSendPaymentsComponent', () => {
     expect(textAreaEl.getAttribute('data-placeholder')).toEqual('Payment Request');
 
     expect(amountEl).toBe(null);
-
   });
 
   it('Invoice: should show Sats and Memo, when valid payment Request is pasted', () => {
-
     component.isCompatibleVersion = true;
     fixture.detectChanges();
 
@@ -221,11 +211,9 @@ describe('CLLightningSendPaymentsComponent', () => {
     expect(textAreaHintEl.textContent).toEqual('Sending: 10,000 Sats | Memo: Test Invoice');
 
     expect(amountEl).toBe(null);
-
   });
 
   it('Invoice: should show "Invalid bolt11: bad bech32 string", when invalid payment Request is pasted and Send Payment is clicked', () => {
-
     component.isCompatibleVersion = true;
     fixture.detectChanges();
 
@@ -237,19 +225,18 @@ describe('CLLightningSendPaymentsComponent', () => {
 
     const errorSpanEl = fixture.debugElement.nativeElement.querySelector('mat-card-content > form > div.alert.alert-danger > span');
     expect(errorSpanEl.textContent).toEqual('Invalid bolt11: bad bech32 string');
+
     // TODO:
     // to have called respective function
-
   });
 
   it('Invoice: should show Payment request field and Amount field, when zero amount Invoice is pasted', () => {
-
     component.isCompatibleVersion = true;
     component.zeroAmtInvoice = true;
     fixture.detectChanges();
 
-    let textAreaEl = fixture.debugElement.nativeElement.querySelector('mat-card-content > form > mat-form-field:nth-child(1) > div > div.mat-form-field-flex > div > textarea');
-    let amountEl = fixture.debugElement.nativeElement.querySelector('mat-card-content > form > mat-form-field:nth-child(2) > div > div.mat-form-field-flex > div > input');
+    const textAreaEl = fixture.debugElement.nativeElement.querySelector('mat-card-content > form > mat-form-field:nth-child(1) > div > div.mat-form-field-flex > div > textarea');
+    const amountEl = fixture.debugElement.nativeElement.querySelector('mat-card-content > form > mat-form-field:nth-child(2) > div > div.mat-form-field-flex > div > input');
 
     expect(textAreaEl).toBeTruthy();
     expect(textAreaEl.getAttribute('data-placeholder')).toEqual('Payment Request');
@@ -270,12 +257,10 @@ describe('CLLightningSendPaymentsComponent', () => {
     amountEl = fixture.debugElement.nativeElement.querySelector('mat-card-content > form > mat-form-field:nth-child(2) > div > div.mat-form-field-flex > div > input');
     expect(amountEl.value).toBe('1');
     */
-
   });
 
   // Keysend
   it('Keysend: should show Pubkey and field, when Keysend is selected', () => {
-
     component.isCompatibleVersion = true;
     fixture.detectChanges();
 
@@ -291,7 +276,6 @@ describe('CLLightningSendPaymentsComponent', () => {
   });
 
   it('Keysend: should show error for Invalid pubkey', () => {
-
     component.isCompatibleVersion = true;
     fixture.detectChanges();
 
@@ -312,11 +296,9 @@ describe('CLLightningSendPaymentsComponent', () => {
 
     const errorSpanEl = fixture.debugElement.nativeElement.querySelector('mat-card-content > form > div.alert.alert-danger > span');
     expect(errorSpanEl.textContent).toEqual(errorString);
-
   });
 
   it('Keysend: should show error for Invalid amount', () => {
-
     component.isCompatibleVersion = true;
     fixture.detectChanges();
 
@@ -337,11 +319,9 @@ describe('CLLightningSendPaymentsComponent', () => {
 
     const errorSpanEl = fixture.debugElement.nativeElement.querySelector('mat-card-content > form > div.alert.alert-danger > span');
     expect(errorSpanEl.textContent).toEqual(errorString);
-
   });
 
   it('Keysend: shouldnt show any error for proper Pubkey and amount values', () => {
-
     component.isCompatibleVersion = true;
     fixture.detectChanges();
 
@@ -362,12 +342,10 @@ describe('CLLightningSendPaymentsComponent', () => {
 
     const errorSpanEl = fixture.debugElement.nativeElement.querySelector('mat-card-content > form > div.alert.alert-danger > span');
     expect(errorSpanEl).toBe(null);
-
   });
 
   // Offers
   it('Offers: should show only Payment request field and Bookmark offers field, when Offers is selected', () => {
-
     component.isCompatibleVersion = true;
     component.selNode = { enableOffers: true };
     fixture.detectChanges();
@@ -383,12 +361,10 @@ describe('CLLightningSendPaymentsComponent', () => {
     expect(textAreaEl).toBeTruthy();
     expect(textAreaEl.getAttribute('data-placeholder')).toEqual('Offer Request');
     expect(amountEl).toBe(null);
-    expect(bookmarkCheckbox).toBeTruthy;
-
+    expect(bookmarkCheckbox).toBeTruthy();
   });
 
   it('Offers: should show Sats and Description, when valid Offer Request is pasted', () => {
-
     component.isCompatibleVersion = true;
     component.selNode = { enableOffers: true };
     fixture.detectChanges();
@@ -407,11 +383,9 @@ describe('CLLightningSendPaymentsComponent', () => {
     expect(textAreaEl).toBeTruthy();
     expect(textAreaEl.getAttribute('data-placeholder')).toEqual('Offer Request');
     expect(textAreaHintEl.textContent).toEqual('Sending: 1,000 Sats | Description: 1000 sat offer');
-
   });
 
   it('Offers: should show "Offer: unparsable offer: invalid bolt11: bad bech32 string: invalid token [offer request]", when invalid offer Request is pasted and Send Payment is clicked', () => {
-
     component.isCompatibleVersion = true;
     component.selNode = { enableOffers: true };
     fixture.detectChanges();
@@ -431,12 +405,9 @@ describe('CLLightningSendPaymentsComponent', () => {
 
     const errorSpanEl = fixture.debugElement.nativeElement.querySelector('mat-card-content > form > div.alert.alert-danger > span');
     expect(errorSpanEl.textContent).toEqual(errorString);
-
-
   });
 
   it('Offers: should show Offer request field and Amount field, when zero amount Offer is pasted', () => {
-
     const hintText = 'Zero Amount Offer | Description: Test offer';
     const amountHintText = 'It is a zero amount offer, enter amount to be paid.';
 
@@ -451,10 +422,10 @@ describe('CLLightningSendPaymentsComponent', () => {
     component.offerDecodedHint = hintText;
     fixture.detectChanges();
 
-    let textAreaEl = fixture.debugElement.nativeElement.querySelector('mat-card-content > form > mat-form-field:nth-child(1) > div > div.mat-form-field-flex > div > textarea');
-    let textAreaHintEl = fixture.debugElement.nativeElement.querySelector('mat-card-content > form > mat-form-field:nth-child(1) > div > div.mat-form-field-subscript-wrapper > div > mat-hint');
-    let amountEl = fixture.debugElement.nativeElement.querySelector('mat-card-content > form > mat-form-field:nth-child(2) > div > div.mat-form-field-flex > div > input');
-    let amountHintEl = fixture.debugElement.nativeElement.querySelector('mat-card-content > form > mat-form-field:nth-child(2) > div > div.mat-form-field-subscript-wrapper > div > mat-hint');
+    const textAreaEl = fixture.debugElement.nativeElement.querySelector('mat-card-content > form > mat-form-field:nth-child(1) > div > div.mat-form-field-flex > div > textarea');
+    const textAreaHintEl = fixture.debugElement.nativeElement.querySelector('mat-card-content > form > mat-form-field:nth-child(1) > div > div.mat-form-field-subscript-wrapper > div > mat-hint');
+    const amountEl = fixture.debugElement.nativeElement.querySelector('mat-card-content > form > mat-form-field:nth-child(2) > div > div.mat-form-field-flex > div > input');
+    const amountHintEl = fixture.debugElement.nativeElement.querySelector('mat-card-content > form > mat-form-field:nth-child(2) > div > div.mat-form-field-subscript-wrapper > div > mat-hint');
 
     expect(textAreaEl).toBeTruthy();
     expect(textAreaEl.getAttribute('data-placeholder')).toEqual('Offer Request');
@@ -463,8 +434,6 @@ describe('CLLightningSendPaymentsComponent', () => {
     expect(amountEl).toBeTruthy();
     expect(amountEl.getAttribute('data-placeholder')).toEqual('Amount (Sats)');
     expect(amountHintEl.textContent).toEqual(amountHintText);
-
-
   });
 
   /*
@@ -486,7 +455,6 @@ describe('CLLightningSendPaymentsComponent', () => {
   */
 
   it('Offers: Checking Bookmark offers checkbox, shows "Title to save" field', () => {
-
     component.isCompatibleVersion = true;
     component.selNode = { enableOffers: true };
     fixture.detectChanges();
@@ -509,7 +477,6 @@ describe('CLLightningSendPaymentsComponent', () => {
     console.log(titleEl);
     //expect(titleEl.getAttribute('data-placeholder')).toEqual('Title to Save');
     */
-
   });
 
   // Radio
@@ -520,7 +487,7 @@ describe('CLLightningSendPaymentsComponent', () => {
     component.offerDecodedHint = 'Test Offer Hint';
     component.offerInvoice = {
       invoice: 'Test Invoice',
-      changes: null,
+      changes: null
     };
 
     component.onPaymentTypeChange();
@@ -532,7 +499,6 @@ describe('CLLightningSendPaymentsComponent', () => {
   });
 
   it('should reset Errors and hint texts when Payment type is changed via Template', () => {
-
     component.isCompatibleVersion = true;
     fixture.detectChanges();
 
@@ -541,7 +507,7 @@ describe('CLLightningSendPaymentsComponent', () => {
     component.offerDecodedHint = 'Test Offer Hint';
     component.offerInvoice = {
       invoice: 'Test Invoice',
-      changes: null,
+      changes: null
     };
 
     const radioGroupEl = fixture.debugElement.nativeElement.querySelector('mat-card-content > mat-radio-group');
@@ -556,7 +522,6 @@ describe('CLLightningSendPaymentsComponent', () => {
 
   // Misc
   it('should clear the current form values on tapping Clear fields', () => {
-
     const componentSpy = spyOn(component, 'resetData').and.callThrough();
 
     const resetBtn = fixture.debugElement.nativeElement.querySelector('mat-card-content > form > div.mt-2 > button:nth-child(1)');
@@ -566,13 +531,12 @@ describe('CLLightningSendPaymentsComponent', () => {
     expect(componentSpy).toHaveBeenCalledTimes(1);
   });
 
-  //TODO:
+  // TODO:
   // Form submission calling onSendPayment();
 
   /*
   // TODO: Not working
   it('should close modal on tapping close button', fakeAsync(() => {
-
     const resetBtn = fixture.debugElement.nativeElement.querySelector('mat-card-header > button');
     resetBtn.click();
     fixture.detectChanges();
@@ -591,8 +555,7 @@ describe('CLLightningSendPaymentsComponent', () => {
    * III. Function wise Test coverage - Begin
    */
   it('onAmountChange(): should set proper amount in decoded object', () => {
-
-    let invoiceInputVal, offerInputVal;
+    let invoiceInputVal: number, offerInputVal: number;
 
     component.paymentType = PaymentTypes.INVOICE;
     invoiceInputVal = 123;
@@ -613,11 +576,9 @@ describe('CLLightningSendPaymentsComponent', () => {
     component.onAmountChange({ target: { value: offerInputVal } });
     expect(component.offerDecoded.amount).toBe(offerInputVal * 1000);
     expect(component.offerDecoded.amount_msat).toBe((offerInputVal * 1000) + 'mast');
-
   });
 
   it('keysendPayment(): should dispatch proper action', () => {
-
     const storeSpy = spyOn(store, 'dispatch').and.callThrough();
     component.pubkey = 'pubkey';
     component.keysendAmount = 150;
@@ -629,11 +590,9 @@ describe('CLLightningSendPaymentsComponent', () => {
     };
     expect(storeSpy.calls.all()[0].args[0]).toEqual(sendPayment({ payload: expectedkeysendPaymentPayload }));
     expect(storeSpy).toHaveBeenCalledTimes(1);
-
   });
 
   it('onSendPayment() :: KEYSEND: should handle negative inputs', () => {
-
     const compSpy = spyOn(component, 'keysendPayment');
     component.paymentType = PaymentTypes.KEYSEND;
 
@@ -643,39 +602,37 @@ describe('CLLightningSendPaymentsComponent', () => {
       { pukey: '', keysendAmount: 0 },
       { pukey: '', keysendAmount: 1 },
       { pukey: ' ', keysendAmount: 10 }
-    ].map(ip => {
+    ].map((ip) => {
       component.pubkey = ip.pukey;
       component.keysendAmount = ip.keysendAmount;
       component.onSendPayment();
       expect(compSpy).not.toHaveBeenCalled();
+      return 1;
     });
-
   });
 
   it('onSendPayment() :: KEYSEND: should handle positive inputs', () => {
-
     const compSpy = spyOn(component, 'keysendPayment');
     component.paymentType = PaymentTypes.KEYSEND;
 
     [
       { key: 'pubKey', amount: 10 },
       { key: 'pubKey  ', amount: 1000 },
-      { key: 'pubKey', amount: 1 },
+      { key: 'pubKey', amount: 1 }
     ].map((ip, index) => {
       component.pubkey = ip.key;
       component.keysendAmount = ip.amount;
       component.onSendPayment();
       expect(compSpy).toHaveBeenCalledTimes(index + 1);
+      return 1;
     });
-
   });
 
   it('onSendPayment() :: INVOICE: should handle negative inputs', () => {
-
     const sendPaymentSpy = spyOn(component, 'sendPayment');
     const resetInvoiceDetailsSpy = spyOn(component, 'resetInvoiceDetails');
     // TODO: Can't access dataService // privateVar
-    //const decodePaymentSpy = spyOn(component.dataService, 'decodePayment');
+    // const decodePaymentSpy = spyOn(component.dataService, 'decodePayment');
 
     component.paymentType = PaymentTypes.INVOICE;
 
@@ -683,30 +640,29 @@ describe('CLLightningSendPaymentsComponent', () => {
       { paymentRequest: 'paymentRequest', zeroAmtInvoice: true, paymentAmount: 0 },
       { paymentRequest: 'paymentRequest', zeroAmtInvoice: true, paymentAmount: null },
       { paymentRequest: '', zeroAmtInvoice: false, paymentAmount: 0 }
-    ].map(ip => {
+    ].map((ip) => {
       component.paymentRequest = ip.paymentRequest;
       component.zeroAmtInvoice = ip.zeroAmtInvoice;
       component.paymentAmount = ip.paymentAmount;
       component.onSendPayment();
       expect(sendPaymentSpy).not.toHaveBeenCalled();
       expect(resetInvoiceDetailsSpy).not.toHaveBeenCalled();
-      //expect(decodePaymentSpy).not.toHaveBeenCalled();
+      // expect(decodePaymentSpy).not.toHaveBeenCalled();
+      return 1;
     });
-
   });
 
   it('onSendPayment() :: INVOICE: should handle Decoded Invoice', () => {
-
     const sendPaymentSpy = spyOn(component, 'sendPayment');
     const resetInvoiceDetailsSpy = spyOn(component, 'resetInvoiceDetails');
     // TODO: Can't access dataService // privateVar
-    //const decodePaymentSpy = spyOn(component.dataService, 'decodePayment');
+    // const decodePaymentSpy = spyOn(component.dataService, 'decodePayment');
 
     component.paymentType = PaymentTypes.INVOICE;
 
     [
       { paymentRequest: 'paymentRequest', zeroAmtInvoice: true, paymentAmount: 100, paymentDecoded: { created_at: new Date().getTime() } },
-      { paymentRequest: 'paymentRequest', zeroAmtInvoice: false, paymentDecoded: { created_at: new Date().getTime() } },
+      { paymentRequest: 'paymentRequest', zeroAmtInvoice: false, paymentDecoded: { created_at: new Date().getTime() } }
     ].map((ip, index) => {
       component.paymentDecoded = ip.paymentDecoded;
       component.paymentRequest = ip.paymentRequest;
@@ -716,23 +672,22 @@ describe('CLLightningSendPaymentsComponent', () => {
 
       expect(sendPaymentSpy).toHaveBeenCalledTimes(index + 1);
       expect(resetInvoiceDetailsSpy).not.toHaveBeenCalled();
-      //expect(decodePaymentSpy).not.toHaveBeenCalledTimes();
+      // expect(decodePaymentSpy).not.toHaveBeenCalledTimes();
+      return 1;
     });
-
   });
 
   it('onSendPayment() :: INVOICE: should handle unprocessed Invoices', () => {
-
     const sendPaymentSpy = spyOn(component, 'sendPayment');
     const resetInvoiceDetailsSpy = spyOn(component, 'resetInvoiceDetails');
     // TODO: Can't access dataService // privateVar
-    //const decodePaymentSpy = spyOn(component.dataService, 'decodePayment');
+    // const decodePaymentSpy = spyOn(component.dataService, 'decodePayment');
 
     component.paymentType = PaymentTypes.INVOICE;
 
     [
       { paymentRequest: 'paymentRequest', zeroAmtInvoice: true, paymentAmount: 100, paymentDecoded: {} },
-      { paymentRequest: 'paymentRequest', zeroAmtInvoice: false, paymentDecoded: {} },
+      { paymentRequest: 'paymentRequest', zeroAmtInvoice: false, paymentDecoded: {} }
     ].map((ip, index) => {
       component.paymentDecoded = ip.paymentDecoded;
       component.paymentRequest = ip.paymentRequest;
@@ -741,11 +696,11 @@ describe('CLLightningSendPaymentsComponent', () => {
       component.onSendPayment();
 
       expect(resetInvoiceDetailsSpy).toHaveBeenCalledTimes(index + 1);
-      //expect(decodePaymentSpy).toHaveBeenCalledTimes();
-      //expect(setPaymentDecodedDetails).toHaveBeenCalledTimes();
+      // expect(decodePaymentSpy).toHaveBeenCalledTimes();
+      // expect(setPaymentDecodedDetails).toHaveBeenCalledTimes();
       expect(sendPaymentSpy).not.toHaveBeenCalled();
+      return 1;
     });
-
   });
 
   it('onSendPayment() :: INVOICE: should handle bolt12 Offer scenario and throw error', () => {
@@ -755,12 +710,82 @@ describe('CLLightningSendPaymentsComponent', () => {
   });
 
   it('onSendPayment() :: OFFER: should handle negative inputs', () => {
+    // TODO: Private var
+    // component.offerReq = { control: { markAsTouched: () => {} } };
+    component.offerAmt = { control: new FormControl() } as any;
+    const sendPaymentSpy = spyOn(component, 'sendPayment');
+    const resetOfferDetailsSpy = spyOn(component, 'resetOfferDetails');
+    // const reqMarkAsTouched = spyOn(component, 'offerReq.control.markAsTouched');
+    const amtMarkAsTouched = spyOn(component.offerAmt.control, 'markAsTouched');
+    // TODO: Can't access dataService // privateVar
+    // const decodePaymentSpy = spyOn(component.dataService, 'decodePayment');
+
+    component.paymentType = PaymentTypes.OFFER;
+
+    [
+      { offerRequest: 'offerRequest', zeroAmtOffer: true, offerAmount: 0 },
+      { offerRequest: 'offerRequest', zeroAmtOffer: true, offerAmount: null },
+      { offerRequest: '', zeroAmtOffer: false, offerAmount: 0 }
+    ].map((ip) => {
+      component.offerRequest = ip.offerRequest;
+      component.zeroAmtOffer = ip.zeroAmtOffer;
+      component.offerAmount = ip.offerAmount;
+      component.onSendPayment();
+      expect(sendPaymentSpy).not.toHaveBeenCalled();
+      expect(resetOfferDetailsSpy).not.toHaveBeenCalled();
+      // expect(reqMarkAsTouched).toHaveBeenCalled();
+      expect(amtMarkAsTouched).toHaveBeenCalled();
+      // expect(decodePaymentSpy).not.toHaveBeenCalled();
+      return 1;
+    });
   });
 
   it('onSendPayment() :: OFFER: should handle Decoded offers', () => {
+    const sendPaymentSpy = spyOn(component, 'sendPayment');
+    const resetOfferDetailsSpy = spyOn(component, 'resetOfferDetails');
+    // TODO: Can't access dataService // privateVar
+    // const decodePaymentSpy = spyOn(component.dataService, 'decodePayment');
+
+    component.paymentType = PaymentTypes.INVOICE;
+
+    [
+      { offerRequest: 'offerRequest', zeroAmtOffer: false, offerDecoded: { offer_id: 'sample_offer_id' }, offerAmount: 1000 }
+    ].map((ip, index) => {
+      component.offerDecoded = ip.offerDecoded;
+      component.offerRequest = ip.offerRequest;
+      component.zeroAmtOffer = ip.zeroAmtOffer;
+      component.offerAmount = ip.offerAmount;
+      component.onSendPayment();
+
+      expect(sendPaymentSpy).toHaveBeenCalledTimes(index + 1);
+      expect(resetOfferDetailsSpy).not.toHaveBeenCalled();
+      // expect(decodePaymentSpy).not.toHaveBeenCalledTimes();
+      return 1;
+    });
   });
 
-  it('onSendPayment() :: OFFER: should handle unprocessed Invoices', () => {
+  it('onSendPayment() :: OFFER: should handle unprocessed offers', () => {
+    const sendPaymentSpy = spyOn(component, 'sendPayment');
+    const resetOfferDetailsSpy = spyOn(component, 'resetOfferDetails');
+    // TODO: Can't access dataService // privateVar
+    // const decodePaymentSpy = spyOn(component.dataService, 'decodePayment');
+
+    component.paymentType = PaymentTypes.INVOICE;
+
+    [
+      { offerRequest: 'offerRequest', zeroAmtOffer: true, offerAmount: 100, offerDecoded: { offer_id: null } }
+    ].map((ip, index) => {
+      component.offerDecoded = ip.offerDecoded;
+      component.offerRequest = ip.offerRequest;
+      component.zeroAmtOffer = ip.zeroAmtOffer;
+      component.offerAmount = ip.offerAmount;
+      component.onSendPayment();
+
+      expect(sendPaymentSpy).not.toHaveBeenCalled();
+      expect(resetOfferDetailsSpy).toHaveBeenCalledTimes(index + 1);
+      // expect(decodePaymentSpy).not.toHaveBeenCalledTimes();
+      return 1;
+    });
   });
 
   it('onSendPayment() :: OFFER: should handle bolt11 Invoice options passed to offer', () => {
@@ -769,22 +794,129 @@ describe('CLLightningSendPaymentsComponent', () => {
   it('onSendPayment() :: OFFER: should handle decoding of Offer :: calling setOfferDecodedDetails()', () => {
   });
 
-  it('onSendPayment() :: OFFER: should handle unprocessed Offers', () => {
-  });
-
   it('sendPayment() :: INVOICE: should handle zero amount invoice', () => {
+    const paymentRequest = 'paymentRequest';
+    const paymentAmount = 1000;
+    const storeSpy = spyOn(store, 'dispatch').and.callThrough();
+    component.paymentType = PaymentTypes.INVOICE;
+    component.zeroAmtInvoice = true;
+    component.paymentRequest = paymentRequest;
+    component.paymentAmount = paymentAmount;
+    component.sendPayment();
+
+    const expectedSendPaymentPayload = {
+      uiMessage: UI_MESSAGES.SEND_PAYMENT,
+      paymentType: PaymentTypes.INVOICE,
+      invoice: paymentRequest,
+      amount: paymentAmount * 1000,
+      fromDialog: true
+    };
+    expect(storeSpy.calls.all()[0].args[0]).toEqual(sendPayment({ payload: expectedSendPaymentPayload }));
+    expect(storeSpy).toHaveBeenCalledTimes(1);
   });
 
   it('sendPayment() :: INVOICE: should handle regular (non zero) invoice', () => {
+    const paymentRequest = 'paymentRequest';
+    const paymentAmount = 1000;
+    const storeSpy = spyOn(store, 'dispatch').and.callThrough();
+    component.paymentType = PaymentTypes.INVOICE;
+    component.zeroAmtInvoice = false;
+    component.paymentRequest = paymentRequest;
+    component.paymentAmount = paymentAmount;
+    component.sendPayment();
+
+    const expectedSendPaymentPayload = {
+      uiMessage: UI_MESSAGES.SEND_PAYMENT,
+      paymentType: PaymentTypes.INVOICE,
+      invoice: paymentRequest,
+      fromDialog: true
+    };
+    expect(storeSpy.calls.all()[0].args[0]).toEqual(sendPayment({ payload: expectedSendPaymentPayload }));
+    expect(storeSpy).toHaveBeenCalledTimes(1);
   });
 
-  it('sendPayment() :: OFFER: should fetch unfetched zero amount offer', () => {
+  it('sendPayment() :: OFFER: should handle Offer with offerInvoice', () => {
+    const flgSaveToDB = true;
+    const offerAmount = 1000;
+    const offerDescription = 'offerDescription';
+    const offerInvoice = { invoice: 'offerInvoice', changes: null };
+    const offerRequest = 'offerRequest';
+    const offerTitle = 'offerTitle';
+    const offerVendor = 'offerVendor';
+    const zeroAmtOffer = false;
+
+    const storeSpy = spyOn(store, 'dispatch').and.callThrough();
+
+    component.paymentType = PaymentTypes.OFFER;
+    component.flgSaveToDB = flgSaveToDB;
+    component.offerAmount = offerAmount;
+    component.offerDescription = offerDescription;
+    component.offerRequest = offerRequest;
+    component.offerTitle = offerTitle;
+    component.offerVendor = offerVendor;
+    component.zeroAmtOffer = zeroAmtOffer;
+    component.sendPayment();
+
+    const expectedSendPaymentPayload = {
+      uiMessage: UI_MESSAGES.SEND_PAYMENT,
+      paymentType: PaymentTypes.OFFER,
+      invoice: offerInvoice.invoice,
+      saveToDB: flgSaveToDB,
+      bolt12: offerRequest,
+      amount: offerAmount * 1000,
+      zeroAmtOffer: zeroAmtOffer,
+      title: offerTitle,
+      vendor: offerVendor,
+      description: offerDescription,
+      fromDialog: true
+    };
+    expect(storeSpy.calls.all()[0].args[0]).toEqual(sendPayment({ payload: expectedSendPaymentPayload }));
+    expect(storeSpy).toHaveBeenCalledTimes(1);
   });
 
-  it('sendPayment() :: OFFER: should fetch unfetched regular (non zero) offer', () => {
+  it('sendPayment() :: OFFER: should fetchOfferInvoice for zeroAmtOffer = true', () => {
+    const offerAmount = 1000;
+    const offerInvoice = null;
+    const offerRequest = 'offerRequest';
+    const zeroAmtOffer = true;
+
+    const storeSpy = spyOn(store, 'dispatch').and.callThrough();
+
+    component.paymentType = PaymentTypes.OFFER;
+    component.offerAmount = offerAmount;
+    component.offerRequest = offerRequest;
+    component.zeroAmtOffer = zeroAmtOffer;
+    component.offerInvoice = offerInvoice;
+    component.sendPayment();
+
+    const expectedSendPaymentPayload = {
+      offer: offerRequest,
+      msatoshi: offerAmount * 1000
+    };
+    expect(storeSpy.calls.all()[0].args[0]).toEqual(fetchOfferInvoice({ payload: expectedSendPaymentPayload }));
+    expect(storeSpy).toHaveBeenCalledTimes(1);
   });
 
-  it('sendPayment() :: OFFER: should handle decoded offer', () => {
+  it('sendPayment() :: OFFER: should fetch Offer Invoice for zeroAmtOffer = false', () => {
+    const offerAmount = 1000;
+    const offerInvoice = null;
+    const offerRequest = 'offerRequest';
+    const zeroAmtOffer = false;
+
+    const storeSpy = spyOn(store, 'dispatch').and.callThrough();
+
+    component.paymentType = PaymentTypes.OFFER;
+    component.offerAmount = offerAmount;
+    component.offerRequest = offerRequest;
+    component.zeroAmtOffer = zeroAmtOffer;
+    component.offerInvoice = offerInvoice;
+    component.sendPayment();
+
+    const expectedSendPaymentPayload = {
+      offer: offerRequest
+    };
+    expect(storeSpy.calls.all()[0].args[0]).toEqual(fetchOfferInvoice({ payload: expectedSendPaymentPayload }));
+    expect(storeSpy).toHaveBeenCalledTimes(1);
   });
 
   it('onPaymentRequestEntry() :: INVOICE: should just reset Decoded Invoice, when event length < 100', () => {
@@ -859,7 +991,6 @@ describe('CLLightningSendPaymentsComponent', () => {
     console.log('errorSpan', errorSpan !== null); // Null
     //console.log('textContent', errorDiv.textContent);
     //expect(errorDiv.textContent).toEqual('Invalid bolt11: bad bech32 string');
-
   });
    */
 
@@ -897,7 +1028,7 @@ describe('CLLightningSendPaymentsComponent', () => {
       amount_msat: '2000msat'
     };
     component.flgSaveToDB = true;
-    component.offerInvoice  = {
+    component.offerInvoice = {
       invoice: 'invoice',
       changes: {}
     };
