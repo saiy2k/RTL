@@ -1,7 +1,7 @@
 import { By } from '@angular/platform-browser';
 import { tick, fakeAsync, waitForAsync, ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { Store, StoreModule } from '@ngrx/store';
 
 import { CommonService } from '../../../shared/services/common.service';
@@ -24,7 +24,7 @@ import { RTLState } from '../../../store/rtl.state';
 import { sendPayment, fetchOfferInvoice } from '../../store/cl.actions';
 import { SelNodeChild } from '../../../shared/models/RTLconfig';
 import { channels } from '../../store/cl.selector';
-import {FormControl} from '@angular/forms';
+import { FormControl } from '@angular/forms';
 
 /**
  * Testing Plan
@@ -68,6 +68,8 @@ describe('CLLightningSendPaymentsComponent', () => {
     commonService = fixture.debugElement.injector.get(CommonService);
     store = fixture.debugElement.injector.get(Store);
     component.activeChannels = [];
+    // console.log(' --- component.payReq', component.payReq);
+    // console.log(' --- component.offerReq', (component as any).offerReq);
     fixture.detectChanges();
   });
 
@@ -111,8 +113,7 @@ describe('CLLightningSendPaymentsComponent', () => {
     expect(component.zeroAmtOffer).toEqual(true);
 
     expect(component.paymentError).toEqual('');
-    // TODO:
-    // expect(component.paymentReq.control.errors).toBe(null); //can't access Private var
+    expect((component as any).paymentReq.control.errors).toBe(null);
   });
 
   it('should reset only Invoice fields', () => {
@@ -140,7 +141,7 @@ describe('CLLightningSendPaymentsComponent', () => {
     expect(component.zeroAmtOffer).toEqual(true);
 
     expect(component.paymentError).toEqual('');
-    // expect(component.paymentReq.control.errors).toBe(null); //can't access Private var
+    expect((component as any).paymentReq.control.errors).toBe(null);
     expect(component.paymentDecodedHint).toEqual('');
   });
 
@@ -170,8 +171,9 @@ describe('CLLightningSendPaymentsComponent', () => {
     expect(component.keysendAmount).toBe(2);
 
     expect(component.paymentError).toEqual('');
-    // expect(component.paymentReq.control.errors).toBe(null); //can't access Private var
+    expect((component as any).paymentReq.control.errors).toBe(null);
   });
+
   /**
    * I. Page Init, Reset - End
    */
@@ -554,28 +556,290 @@ describe('CLLightningSendPaymentsComponent', () => {
   /**
    * III. Function wise Test coverage - Begin
    */
-  it('onAmountChange(): should set proper amount in decoded object', () => {
-    let invoiceInputVal: number, offerInputVal: number;
+
+  it('onSendPayment() :: KEYSEND: should handle negative inputs', () => {
+    const keysendPaymentSpy = spyOn(component, 'keysendPayment');
+    component.paymentType = PaymentTypes.KEYSEND;
+
+    [
+      { pukey: null, keysendAmount: null },
+      { pukey: null, keysendAmount: 0 },
+      { pukey: null, keysendAmount: -1 },
+      { pukey: null, keysendAmount: 1 },
+      { pukey: null, keysendAmount: 10 },
+      { pukey: '', keysendAmount: null },
+      { pukey: '', keysendAmount: 0 },
+      { pukey: '', keysendAmount: -1 },
+      { pukey: '', keysendAmount: 1 },
+      { pukey: '', keysendAmount: 10 },
+      { pukey: ' ', keysendAmount: null },
+      { pukey: ' ', keysendAmount: 0 },
+      { pukey: ' ', keysendAmount: -1 },
+      { pukey: ' ', keysendAmount: 1 },
+      { pukey: ' ', keysendAmount: 10 },
+      { pukey: 'pubkey', keysendAmount: null },
+      { pukey: 'pubkey', keysendAmount: 0 },
+      { pukey: 'pubkey', keysendAmount: -1 }
+    ].map((ip) => {
+      component.pubkey = ip.pukey;
+      component.keysendAmount = ip.keysendAmount;
+      component.onSendPayment();
+      expect(keysendPaymentSpy).not.toHaveBeenCalled();
+      return 1;
+    });
+  });
+
+  it('onSendPayment() :: KEYSEND: should handle positive inputs', () => {
+    const keysendPaymentSpy = spyOn(component, 'keysendPayment');
+    component.paymentType = PaymentTypes.KEYSEND;
+
+    [
+      { key: 'pubKey', amount: 10 },
+      { key: 'pubKey  ', amount: 1000 },
+      { key: 'pubKey', amount: 1 }
+    ].map((ip, index) => {
+      component.pubkey = ip.key;
+      component.keysendAmount = ip.amount;
+      component.onSendPayment();
+      expect(keysendPaymentSpy).toHaveBeenCalledTimes(index + 1);
+      return 1;
+    });
+  });
+
+  it('onSendPayment() :: INVOICE: should handle negative inputs', () => {
+    const sendPaymentSpy = spyOn(component, 'sendPayment');
+    const resetInvoiceDetailsSpy = spyOn(component, 'resetInvoiceDetails');
+    const decodePaymentSpy = spyOn((component as any).dataService, 'decodePayment');
 
     component.paymentType = PaymentTypes.INVOICE;
-    invoiceInputVal = 123;
-    component.onAmountChange({ target: { value: invoiceInputVal } });
-    expect(component.paymentDecoded.msatoshi).toBe(invoiceInputVal * 1000);
 
-    invoiceInputVal = 125;
-    component.onAmountChange({ target: { value: invoiceInputVal } });
-    expect(component.paymentDecoded.msatoshi).toBe(invoiceInputVal * 1000);
+    [
+      { paymentRequest: null, zeroAmtInvoice: false, paymentAmount: null },
+      { paymentRequest: null, zeroAmtInvoice: false, paymentAmount: 0 },
+      { paymentRequest: null, zeroAmtInvoice: false, paymentAmount: 10 },
+      { paymentRequest: null, zeroAmtInvoice: true, paymentAmount: null },
+      { paymentRequest: null, zeroAmtInvoice: true, paymentAmount: 0 },
+      { paymentRequest: null, zeroAmtInvoice: true, paymentAmount: 10 },
+      { paymentRequest: 'paymentRequest', zeroAmtInvoice: false, paymentAmount: null },
+      { paymentRequest: 'paymentRequest', zeroAmtInvoice: false, paymentAmount: 0 },
+      { paymentRequest: 'paymentRequest', zeroAmtInvoice: false, paymentAmount: 10 },
+      { paymentRequest: 'paymentRequest', zeroAmtInvoice: true, paymentAmount: null },
+      { paymentRequest: 'paymentRequest', zeroAmtInvoice: true, paymentAmount: 0 }
+    ].map((ip) => {
+      component.paymentRequest = ip.paymentRequest;
+      component.zeroAmtInvoice = ip.zeroAmtInvoice;
+      component.paymentAmount = ip.paymentAmount;
+      component.onSendPayment();
+      expect(sendPaymentSpy).not.toHaveBeenCalled();
+      expect(resetInvoiceDetailsSpy).not.toHaveBeenCalled();
+      expect(decodePaymentSpy).not.toHaveBeenCalled();
+      return 1;
+    });
+  });
+
+  it('onSendPayment() :: INVOICE: should handle Decoded Invoice', () => {
+    const sendPaymentSpy = spyOn(component, 'sendPayment');
+    const resetInvoiceDetailsSpy = spyOn(component, 'resetInvoiceDetails');
+    const decodePaymentSpy = spyOn((component as any).dataService, 'decodePayment');
+
+    component.paymentType = PaymentTypes.INVOICE;
+
+    [
+      { paymentRequest: 'paymentRequest', zeroAmtInvoice: true, paymentAmount: 100, paymentDecoded: { created_at: new Date().getTime() } }
+    ].map((ip, index) => {
+      component.paymentDecoded = ip.paymentDecoded;
+      component.paymentRequest = ip.paymentRequest;
+      component.zeroAmtInvoice = ip.zeroAmtInvoice;
+      component.paymentAmount = ip.paymentAmount;
+      component.onSendPayment();
+
+      expect(sendPaymentSpy).toHaveBeenCalledTimes(index + 1);
+      expect(resetInvoiceDetailsSpy).not.toHaveBeenCalled();
+      expect(decodePaymentSpy).not.toHaveBeenCalled();
+      return 1;
+    });
+  });
+
+  it('onSendPayment() :: INVOICE: should handle decoding of Invoice :: calling setPaymentDecodedDetails()', () => {
+    const decodedPayment = {
+      type: 'bolt11_invoice'
+    };
+    const sendPaymentSpy = spyOn(component, 'sendPayment');
+    const resetInvoiceDetailsSpy = spyOn(component, 'resetInvoiceDetails');
+    const decodePaymentSpy = spyOn((component as any).dataService, 'decodePayment').and.returnValue(of(decodedPayment));
+    const setPaymentDecodedDetailsSpy = spyOn(component, 'setPaymentDecodedDetails');
+
+    component.paymentType = PaymentTypes.INVOICE;
+
+    [
+      { paymentRequest: 'paymentRequest', zeroAmtInvoice: true, paymentAmount: 100, paymentDecoded: {} },
+      { paymentRequest: 'paymentRequest', zeroAmtInvoice: false, paymentDecoded: {} }
+    ].map((ip, index) => {
+      component.paymentDecoded = ip.paymentDecoded;
+      component.paymentRequest = ip.paymentRequest;
+      component.zeroAmtInvoice = ip.zeroAmtInvoice;
+      component.paymentAmount = ip.paymentAmount;
+
+      component.onSendPayment();
+
+      expect(resetInvoiceDetailsSpy).toHaveBeenCalledTimes(index + 1);
+      expect(decodePaymentSpy).toHaveBeenCalledTimes(index + 1);
+      expect(setPaymentDecodedDetailsSpy).toHaveBeenCalledTimes(index + 1);
+      expect(sendPaymentSpy).not.toHaveBeenCalled();
+      expect(component.paymentDecoded).toBe(decodedPayment);
+      return 1;
+    });
+  });
+
+  it('onSendPayment() :: INVOICE: should handle bolt12 Offer scenario and throw error', () => {
+    const decodedRequest = {
+      type: 'bolt12 offer',
+      offer_id: 'offer_id'
+    };
+    const sendPaymentSpy = spyOn(component, 'sendPayment');
+    const resetInvoiceDetailsSpy = spyOn(component, 'resetInvoiceDetails');
+    const decodePaymentSpy = spyOn((component as any).dataService, 'decodePayment').and.returnValue(of(decodedRequest));
+
+    component.paymentType = PaymentTypes.INVOICE;
+
+    [
+      { paymentRequest: 'paymentRequest', zeroAmtInvoice: true, paymentAmount: 100, paymentDecoded: {} },
+      { paymentRequest: 'paymentRequest', zeroAmtInvoice: false, paymentDecoded: {} }
+    ].map((ip, index) => {
+      component.paymentDecoded = ip.paymentDecoded;
+      component.paymentRequest = ip.paymentRequest;
+      component.zeroAmtInvoice = ip.zeroAmtInvoice;
+      component.paymentAmount = ip.paymentAmount;
+
+      component.onSendPayment();
+
+      expect(sendPaymentSpy).not.toHaveBeenCalled();
+      expect(resetInvoiceDetailsSpy).toHaveBeenCalledTimes(index + 1);
+      expect(decodePaymentSpy).toHaveBeenCalledTimes(index + 1);
+      expect(component.paymentDecodedHint).toBe('ERROR: Select Offer option to pay the bolt12 offer invoice.');
+      return 1;
+    });
+  });
+
+  it('onSendPayment() :: OFFER: should handle negative inputs', () => {
+    const decodedRequest = {
+      type: 'bolt12 offer'
+    };
+    component.offerAmt = { control: new FormControl() } as any;
+    const sendPaymentSpy = spyOn(component, 'sendPayment');
+    const resetOfferDetailsSpy = spyOn(component, 'resetOfferDetails');
+    const reqMarkAsTouched = spyOn((component as any).offerReq.control, 'markAsTouched');
+    const amtMarkAsTouched = spyOn(component.offerAmt.control, 'markAsTouched');
+    const decodePaymentSpy = spyOn((component as any).dataService, 'decodePayment').and.returnValue(of(decodedRequest));
 
     component.paymentType = PaymentTypes.OFFER;
-    offerInputVal = 20;
-    component.onAmountChange({ target: { value: offerInputVal } });
-    expect(component.offerDecoded.amount).toBe(offerInputVal * 1000);
-    expect(component.offerDecoded.amount_msat).toBe((offerInputVal * 1000) + 'mast');
 
-    offerInputVal = 28;
-    component.onAmountChange({ target: { value: offerInputVal } });
-    expect(component.offerDecoded.amount).toBe(offerInputVal * 1000);
-    expect(component.offerDecoded.amount_msat).toBe((offerInputVal * 1000) + 'mast');
+    [
+      { offerRequest: 'offerRequest', zeroAmtOffer: true, offerAmount: 0 },
+      { offerRequest: 'offerRequest', zeroAmtOffer: true, offerAmount: null },
+      { offerRequest: '', zeroAmtOffer: false, offerAmount: 0 }
+    ].map((ip, index) => {
+      component.offerRequest = ip.offerRequest;
+      component.zeroAmtOffer = ip.zeroAmtOffer;
+      component.offerAmount = ip.offerAmount;
+
+      component.onSendPayment();
+
+      expect(reqMarkAsTouched).toHaveBeenCalledTimes(index + 1);
+      expect(amtMarkAsTouched).toHaveBeenCalledTimes(index + 1);
+      expect(sendPaymentSpy).not.toHaveBeenCalled();
+      expect(resetOfferDetailsSpy).not.toHaveBeenCalled();
+      expect(decodePaymentSpy).not.toHaveBeenCalled();
+      return 1;
+    });
+  });
+
+  it('onSendPayment() :: OFFER: should handle Decoded offers', () => {
+    const decodedRequest = {
+      type: 'bolt12 offer'
+    };
+    const sendPaymentSpy = spyOn(component, 'sendPayment');
+    const resetOfferDetailsSpy = spyOn(component, 'resetOfferDetails');
+    const decodePaymentSpy = spyOn((component as any).dataService, 'decodePayment').and.returnValue(of(decodedRequest));
+
+    component.paymentType = PaymentTypes.OFFER;
+
+    [
+      { offerRequest: 'offerRequest', zeroAmtOffer: false, offerDecoded: { offer_id: 'sample_offer_id' }, offerAmount: 1000 }
+    ].map((ip, index) => {
+      component.offerDecoded = ip.offerDecoded;
+      component.offerRequest = ip.offerRequest;
+      component.zeroAmtOffer = ip.zeroAmtOffer;
+      component.offerAmount = ip.offerAmount;
+
+      component.onSendPayment();
+
+      expect(sendPaymentSpy).toHaveBeenCalledTimes(index + 1);
+      expect(resetOfferDetailsSpy).not.toHaveBeenCalled();
+      expect(decodePaymentSpy).not.toHaveBeenCalled();
+      return 1;
+    });
+  });
+
+  it('onSendPayment() :: OFFER: should handle decoding of Offer :: calling setOfferDecodedDetails()', () => {
+    const decodedRequest = {
+      type: 'bolt12 offer'
+    };
+    const sendPaymentSpy = spyOn(component, 'sendPayment');
+    const resetOfferDetailsSpy = spyOn(component, 'resetOfferDetails');
+    const decodePaymentSpy = spyOn((component as any).dataService, 'decodePayment').and.returnValue(of(decodedRequest));
+    const setOfferDecodedDetailsSpy = spyOn(component, 'setOfferDecodedDetails');
+
+    component.paymentType = PaymentTypes.OFFER;
+
+    [
+      { offerRequest: 'offerRequest', zeroAmtOffer: true, offerAmount: 100, offerDecoded: { offer_id: null } }
+    ].map((ip, index) => {
+      component.offerDecoded = ip.offerDecoded;
+      component.offerRequest = ip.offerRequest;
+      component.zeroAmtOffer = ip.zeroAmtOffer;
+      component.offerAmount = ip.offerAmount;
+
+      component.onSendPayment();
+
+      expect(sendPaymentSpy).not.toHaveBeenCalled();
+      expect(resetOfferDetailsSpy).toHaveBeenCalledTimes(index + 1);
+      expect(decodePaymentSpy).toHaveBeenCalledTimes(index + 1);
+      expect(setOfferDecodedDetailsSpy).toHaveBeenCalledTimes(index + 1);
+      expect(component.offerDecoded).toBe(decodedRequest);
+      return 1;
+    });
+  });
+
+  it('onSendPayment() :: OFFER: should handle bolt11 Invoice options passed to offer', () => {
+    const decodedRequest = {
+      type: 'bolt11 invoice',
+      payment_hash: 'hash'
+    };
+    const sendPaymentSpy = spyOn(component, 'sendPayment');
+    const resetOfferDetailsSpy = spyOn(component, 'resetOfferDetails');
+    const decodePaymentSpy = spyOn((component as any).dataService, 'decodePayment').and.returnValue(of(decodedRequest));
+    const setOfferDecodedDetailsSpy = spyOn(component, 'setOfferDecodedDetails');
+
+    component.paymentType = PaymentTypes.OFFER;
+
+    [
+      { offerRequest: 'offerRequest', zeroAmtOffer: true, offerAmount: 100, offerDecoded: { offer_id: null } }
+    ].map((ip, index) => {
+      component.offerDecoded = ip.offerDecoded;
+      component.offerRequest = ip.offerRequest;
+      component.zeroAmtOffer = ip.zeroAmtOffer;
+      component.offerAmount = ip.offerAmount;
+
+      component.onSendPayment();
+
+      expect(sendPaymentSpy).not.toHaveBeenCalled();
+      expect(resetOfferDetailsSpy).toHaveBeenCalledTimes(index + 1);
+      expect(decodePaymentSpy).toHaveBeenCalledTimes(index + 1);
+      expect(setOfferDecodedDetailsSpy).not.toHaveBeenCalled();
+      expect(component.offerDecodedHint).toBe('ERROR: Select Invoice option to pay the bolt11 invoice.');
+      return 1;
+    });
   });
 
   it('keysendPayment(): should dispatch proper action', () => {
@@ -590,208 +854,6 @@ describe('CLLightningSendPaymentsComponent', () => {
     };
     expect(storeSpy.calls.all()[0].args[0]).toEqual(sendPayment({ payload: expectedkeysendPaymentPayload }));
     expect(storeSpy).toHaveBeenCalledTimes(1);
-  });
-
-  it('onSendPayment() :: KEYSEND: should handle negative inputs', () => {
-    const compSpy = spyOn(component, 'keysendPayment');
-    component.paymentType = PaymentTypes.KEYSEND;
-
-    [
-      { pukey: '', keysendAmount: null },
-      { pukey: '', keysendAmount: -1 },
-      { pukey: '', keysendAmount: 0 },
-      { pukey: '', keysendAmount: 1 },
-      { pukey: ' ', keysendAmount: 10 }
-    ].map((ip) => {
-      component.pubkey = ip.pukey;
-      component.keysendAmount = ip.keysendAmount;
-      component.onSendPayment();
-      expect(compSpy).not.toHaveBeenCalled();
-      return 1;
-    });
-  });
-
-  it('onSendPayment() :: KEYSEND: should handle positive inputs', () => {
-    const compSpy = spyOn(component, 'keysendPayment');
-    component.paymentType = PaymentTypes.KEYSEND;
-
-    [
-      { key: 'pubKey', amount: 10 },
-      { key: 'pubKey  ', amount: 1000 },
-      { key: 'pubKey', amount: 1 }
-    ].map((ip, index) => {
-      component.pubkey = ip.key;
-      component.keysendAmount = ip.amount;
-      component.onSendPayment();
-      expect(compSpy).toHaveBeenCalledTimes(index + 1);
-      return 1;
-    });
-  });
-
-  it('onSendPayment() :: INVOICE: should handle negative inputs', () => {
-    const sendPaymentSpy = spyOn(component, 'sendPayment');
-    const resetInvoiceDetailsSpy = spyOn(component, 'resetInvoiceDetails');
-    // TODO: Can't access dataService // privateVar
-    // const decodePaymentSpy = spyOn(component.dataService, 'decodePayment');
-
-    component.paymentType = PaymentTypes.INVOICE;
-
-    [
-      { paymentRequest: 'paymentRequest', zeroAmtInvoice: true, paymentAmount: 0 },
-      { paymentRequest: 'paymentRequest', zeroAmtInvoice: true, paymentAmount: null },
-      { paymentRequest: '', zeroAmtInvoice: false, paymentAmount: 0 }
-    ].map((ip) => {
-      component.paymentRequest = ip.paymentRequest;
-      component.zeroAmtInvoice = ip.zeroAmtInvoice;
-      component.paymentAmount = ip.paymentAmount;
-      component.onSendPayment();
-      expect(sendPaymentSpy).not.toHaveBeenCalled();
-      expect(resetInvoiceDetailsSpy).not.toHaveBeenCalled();
-      // expect(decodePaymentSpy).not.toHaveBeenCalled();
-      return 1;
-    });
-  });
-
-  it('onSendPayment() :: INVOICE: should handle Decoded Invoice', () => {
-    const sendPaymentSpy = spyOn(component, 'sendPayment');
-    const resetInvoiceDetailsSpy = spyOn(component, 'resetInvoiceDetails');
-    // TODO: Can't access dataService // privateVar
-    // const decodePaymentSpy = spyOn(component.dataService, 'decodePayment');
-
-    component.paymentType = PaymentTypes.INVOICE;
-
-    [
-      { paymentRequest: 'paymentRequest', zeroAmtInvoice: true, paymentAmount: 100, paymentDecoded: { created_at: new Date().getTime() } },
-      { paymentRequest: 'paymentRequest', zeroAmtInvoice: false, paymentDecoded: { created_at: new Date().getTime() } }
-    ].map((ip, index) => {
-      component.paymentDecoded = ip.paymentDecoded;
-      component.paymentRequest = ip.paymentRequest;
-      component.zeroAmtInvoice = ip.zeroAmtInvoice;
-      component.paymentAmount = ip.paymentAmount;
-      component.onSendPayment();
-
-      expect(sendPaymentSpy).toHaveBeenCalledTimes(index + 1);
-      expect(resetInvoiceDetailsSpy).not.toHaveBeenCalled();
-      // expect(decodePaymentSpy).not.toHaveBeenCalledTimes();
-      return 1;
-    });
-  });
-
-  it('onSendPayment() :: INVOICE: should handle unprocessed Invoices', () => {
-    const sendPaymentSpy = spyOn(component, 'sendPayment');
-    const resetInvoiceDetailsSpy = spyOn(component, 'resetInvoiceDetails');
-    // TODO: Can't access dataService // privateVar
-    // const decodePaymentSpy = spyOn(component.dataService, 'decodePayment');
-
-    component.paymentType = PaymentTypes.INVOICE;
-
-    [
-      { paymentRequest: 'paymentRequest', zeroAmtInvoice: true, paymentAmount: 100, paymentDecoded: {} },
-      { paymentRequest: 'paymentRequest', zeroAmtInvoice: false, paymentDecoded: {} }
-    ].map((ip, index) => {
-      component.paymentDecoded = ip.paymentDecoded;
-      component.paymentRequest = ip.paymentRequest;
-      component.zeroAmtInvoice = ip.zeroAmtInvoice;
-      component.paymentAmount = ip.paymentAmount;
-      component.onSendPayment();
-
-      expect(resetInvoiceDetailsSpy).toHaveBeenCalledTimes(index + 1);
-      // expect(decodePaymentSpy).toHaveBeenCalledTimes();
-      // expect(setPaymentDecodedDetails).toHaveBeenCalledTimes();
-      expect(sendPaymentSpy).not.toHaveBeenCalled();
-      return 1;
-    });
-  });
-
-  it('onSendPayment() :: INVOICE: should handle bolt12 Offer scenario and throw error', () => {
-  });
-
-  it('onSendPayment() :: INVOICE: should handle decoding of Invoice :: calling setPaymentDecodedDetails()', () => {
-  });
-
-  it('onSendPayment() :: OFFER: should handle negative inputs', () => {
-    // TODO: Private var
-    // component.offerReq = { control: { markAsTouched: () => {} } };
-    component.offerAmt = { control: new FormControl() } as any;
-    const sendPaymentSpy = spyOn(component, 'sendPayment');
-    const resetOfferDetailsSpy = spyOn(component, 'resetOfferDetails');
-    // const reqMarkAsTouched = spyOn(component, 'offerReq.control.markAsTouched');
-    const amtMarkAsTouched = spyOn(component.offerAmt.control, 'markAsTouched');
-    // TODO: Can't access dataService // privateVar
-    // const decodePaymentSpy = spyOn(component.dataService, 'decodePayment');
-
-    component.paymentType = PaymentTypes.OFFER;
-
-    [
-      { offerRequest: 'offerRequest', zeroAmtOffer: true, offerAmount: 0 },
-      { offerRequest: 'offerRequest', zeroAmtOffer: true, offerAmount: null },
-      { offerRequest: '', zeroAmtOffer: false, offerAmount: 0 }
-    ].map((ip) => {
-      component.offerRequest = ip.offerRequest;
-      component.zeroAmtOffer = ip.zeroAmtOffer;
-      component.offerAmount = ip.offerAmount;
-      component.onSendPayment();
-      expect(sendPaymentSpy).not.toHaveBeenCalled();
-      expect(resetOfferDetailsSpy).not.toHaveBeenCalled();
-      // expect(reqMarkAsTouched).toHaveBeenCalled();
-      expect(amtMarkAsTouched).toHaveBeenCalled();
-      // expect(decodePaymentSpy).not.toHaveBeenCalled();
-      return 1;
-    });
-  });
-
-  it('onSendPayment() :: OFFER: should handle Decoded offers', () => {
-    const sendPaymentSpy = spyOn(component, 'sendPayment');
-    const resetOfferDetailsSpy = spyOn(component, 'resetOfferDetails');
-    // TODO: Can't access dataService // privateVar
-    // const decodePaymentSpy = spyOn(component.dataService, 'decodePayment');
-
-    component.paymentType = PaymentTypes.INVOICE;
-
-    [
-      { offerRequest: 'offerRequest', zeroAmtOffer: false, offerDecoded: { offer_id: 'sample_offer_id' }, offerAmount: 1000 }
-    ].map((ip, index) => {
-      component.offerDecoded = ip.offerDecoded;
-      component.offerRequest = ip.offerRequest;
-      component.zeroAmtOffer = ip.zeroAmtOffer;
-      component.offerAmount = ip.offerAmount;
-      component.onSendPayment();
-
-      expect(sendPaymentSpy).toHaveBeenCalledTimes(index + 1);
-      expect(resetOfferDetailsSpy).not.toHaveBeenCalled();
-      // expect(decodePaymentSpy).not.toHaveBeenCalledTimes();
-      return 1;
-    });
-  });
-
-  it('onSendPayment() :: OFFER: should handle unprocessed offers', () => {
-    const sendPaymentSpy = spyOn(component, 'sendPayment');
-    const resetOfferDetailsSpy = spyOn(component, 'resetOfferDetails');
-    // TODO: Can't access dataService // privateVar
-    // const decodePaymentSpy = spyOn(component.dataService, 'decodePayment');
-
-    component.paymentType = PaymentTypes.INVOICE;
-
-    [
-      { offerRequest: 'offerRequest', zeroAmtOffer: true, offerAmount: 100, offerDecoded: { offer_id: null } }
-    ].map((ip, index) => {
-      component.offerDecoded = ip.offerDecoded;
-      component.offerRequest = ip.offerRequest;
-      component.zeroAmtOffer = ip.zeroAmtOffer;
-      component.offerAmount = ip.offerAmount;
-      component.onSendPayment();
-
-      expect(sendPaymentSpy).not.toHaveBeenCalled();
-      expect(resetOfferDetailsSpy).toHaveBeenCalledTimes(index + 1);
-      // expect(decodePaymentSpy).not.toHaveBeenCalledTimes();
-      return 1;
-    });
-  });
-
-  it('onSendPayment() :: OFFER: should handle bolt11 Invoice options passed to offer', () => {
-  });
-
-  it('onSendPayment() :: OFFER: should handle decoding of Offer :: calling setOfferDecodedDetails()', () => {
   });
 
   it('sendPayment() :: INVOICE: should handle zero amount invoice', () => {
@@ -919,43 +981,271 @@ describe('CLLightningSendPaymentsComponent', () => {
     expect(storeSpy).toHaveBeenCalledTimes(1);
   });
 
-  it('onPaymentRequestEntry() :: INVOICE: should just reset Decoded Invoice, when event length < 100', () => {
+  it('onPaymentRequestEntry() :: INVOICE: should just reset Invoice details, when event length < 100', () => {
+    const decodedRequest = {
+      type: 'bolt12 offer'
+    };
+    const resetInvoiceDetailsSpy = spyOn(component, 'resetInvoiceDetails');
+    const decodePaymentSpy = spyOn((component as any).dataService, 'decodePayment').and.returnValue(of(decodedRequest));
+    const event = 'paymentRequest';
+
+    component.paymentType = PaymentTypes.INVOICE;
+    component.onPaymentRequestEntry(event);
+
+    expect(component.paymentRequest).toBe(event);
+    expect(resetInvoiceDetailsSpy).toHaveBeenCalledTimes(1);
+    expect(decodePaymentSpy).not.toHaveBeenCalled();
   });
 
-  it('onPaymentRequestEntry() :: INVOICE: should reset Decoded Invoice and decode new Request, when event length > 100', () => {
+  it('onPaymentRequestEntry() :: INVOICE: should reset Invoice details and decode new Request, when event length > 100', () => {
+    const decodedRequest = {
+      type: 'bolt12 offer'
+    };
+    const resetInvoiceDetailsSpy = spyOn(component, 'resetInvoiceDetails');
+    const decodePaymentSpy = spyOn((component as any).dataService, 'decodePayment').and.returnValue(of(decodedRequest));
+    const event = 'abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz';
+
+    component.paymentType = PaymentTypes.INVOICE;
+    component.onPaymentRequestEntry(event);
+
+    expect(component.paymentRequest).toBe(event);
+    expect(resetInvoiceDetailsSpy).toHaveBeenCalledTimes(1);
+    expect(decodePaymentSpy).toHaveBeenCalledTimes(1);
+    // TODO: Test inside subscribe
   });
 
   it('onPaymentRequestEntry() :: INVOICE: should handle bolt12 offer selection mismatch', () => {
   });
 
+  it('onPaymentRequestEntry() :: INVOICE: should setPaymentDecodedDetails for proper payment', () => {
+  });
+
   it('onPaymentRequestEntry() :: OFFER: should just reset Decoded Offer, when event length < 100 ', () => {
+    const resetOfferDetailsSpy = spyOn(component, 'resetOfferDetails');
+    const decodePaymentSpy = spyOn((component as any).dataService, 'decodePayment');
+    const event = 'offerRequest';
+
+    component.paymentType = PaymentTypes.OFFER;
+    component.onPaymentRequestEntry(event);
+
+    expect(component.offerRequest).toBe(event);
+    expect(resetOfferDetailsSpy).toHaveBeenCalledTimes(1);
+    expect(decodePaymentSpy).not.toHaveBeenCalled();
   });
 
   it('onPaymentRequestEntry() :: OFFER: should reset Decoded Offer and decode new Request, when event length > 100', () => {
+    const decodedRequest = {
+      type: 'bolt12 offer',
+    };
+    const resetOfferDetailsSpy = spyOn(component, 'resetOfferDetails');
+    const decodePaymentSpy = spyOn((component as any).dataService, 'decodePayment').and.returnValue(of(decodedRequest));
+    const event = 'abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz';
+
+    component.paymentType = PaymentTypes.OFFER;
+    component.onPaymentRequestEntry(event);
+
+    expect(component.offerRequest).toBe(event);
+    expect(resetOfferDetailsSpy).toHaveBeenCalledTimes(1);
+    expect(decodePaymentSpy).toHaveBeenCalledTimes(1);
+    // TODO: Test inside subscribe
   });
 
   it('onPaymentRequestEntry() :: OFFER: should handle bolt11 invoice selection mismatch', () => {
   });
 
   it('resetOfferDetails() :: should reset all offer related fields', () => {
+    populateComponentFields();
+    component.resetOfferDetails();
+
+    expect(component.offerInvoice).toBe(null);
+    expect(component.offerAmount).toBe(null);
+    expect(component.offerDecodedHint).toEqual('');
+    expect(component.zeroAmtOffer).toBe(false);
+    expect(component.paymentError).toEqual('');
+    // expect(component.offerReq.control.errors).toBe(null); //can't access Private var
   });
 
   it('resetInvoiceDetails() :: should reset all invoice related fields', () => {
+    populateComponentFields();
+    component.resetInvoiceDetails();
+
+    expect(component.paymentAmount).toBe(null);
+    expect(component.paymentDecodedHint).toEqual('');
+    expect(component.zeroAmtInvoice).toBe(false);
+    expect(component.paymentError).toEqual('');
+    // expect(component.paymentReq.control.errors).toBe(null); //can't access Private var
+  });
+
+  it('onAmountChange(): should set proper amount in decoded object', () => {
+    let invoiceInputVal: number, offerInputVal: number;
+
+    component.paymentType = PaymentTypes.INVOICE;
+    invoiceInputVal = 123;
+    component.onAmountChange({ target: { value: invoiceInputVal } });
+    expect(component.paymentDecoded.msatoshi).toBe(invoiceInputVal * 1000);
+
+    invoiceInputVal = 125;
+    component.onAmountChange({ target: { value: invoiceInputVal } });
+    expect(component.paymentDecoded.msatoshi).toBe(invoiceInputVal * 1000);
+
+    component.paymentType = PaymentTypes.OFFER;
+    offerInputVal = 20;
+    component.onAmountChange({ target: { value: offerInputVal } });
+    expect(component.offerDecoded.amount).toBe(offerInputVal * 1000);
+    expect(component.offerDecoded.amount_msat).toBe((offerInputVal * 1000) + 'mast');
+
+    offerInputVal = 28;
+    component.onAmountChange({ target: { value: offerInputVal } });
+    expect(component.offerDecoded.amount).toBe(offerInputVal * 1000);
+    expect(component.offerDecoded.amount_msat).toBe((offerInputVal * 1000) + 'mast');
   });
 
   it('onPaymentTypeChange() :: should reset errors and hints', () => {
+    populateComponentFields();
+    component.onPaymentTypeChange();
+
+    expect(component.paymentError).toEqual('');
+    expect(component.paymentDecodedHint).toEqual('');
+    expect(component.offerDecodedHint).toEqual('');
+    expect(component.offerInvoice).toBe(null);
   });
 
   it('setOfferDecodedDetails() :: should handle zero amount offer', () => {
+    // vendor
+    const offerDecoded = {
+      offer_id: 'offer_id',
+      amount_msat: null,
+      description: 'description',
+      vendor: 'vendor'
+    };
+    component.offerDecoded = offerDecoded;
+
+    component.setOfferDecodedDetails();
+
+    expect(component.offerDecoded.amount_msat).toBe('0msat');
+    expect(component.offerDecoded.amount).toBe(0);
+    expect(component.zeroAmtOffer).toBe(true);
+    expect(component.offerDescription).toBe(offerDecoded.description);
+    expect(component.offerVendor).toBe(offerDecoded.vendor);
+    expect(component.offerDecodedHint).toBe('Zero Amount Offer | Description: ' + offerDecoded.description);
+
+    // issuer
+    const offerDecoded1 = {
+      offer_id: 'offer_id',
+      amount_msat: null,
+      description: 'description',
+      issuer: 'issuer'
+    };
+    component.offerDecoded = offerDecoded1;
+
+    component.setOfferDecodedDetails();
+
+    expect(component.offerDecoded.amount_msat).toBe('0msat');
+    expect(component.offerDecoded.amount).toBe(0);
+    expect(component.zeroAmtOffer).toBe(true);
+    expect(component.offerDescription).toBe(offerDecoded1.description);
+    expect(component.offerVendor).toBe(offerDecoded1.issuer);
+    expect(component.offerDecodedHint).toBe('Zero Amount Offer | Description: ' + offerDecoded1.description);
+
+    // no vendor / no issuer
+    const offerDecoded2 = {
+      offer_id: 'offer_id',
+      amount_msat: null,
+      description: 'description'
+    };
+    component.offerDecoded = offerDecoded2;
+
+    component.setOfferDecodedDetails();
+
+    expect(component.offerDecoded.amount_msat).toBe('0msat');
+    expect(component.offerDecoded.amount).toBe(0);
+    expect(component.zeroAmtOffer).toBe(true);
+    expect(component.offerDescription).toBe(offerDecoded2.description);
+    expect(component.offerVendor).toBe('');
+    expect(component.offerDecodedHint).toBe('Zero Amount Offer | Description: ' + offerDecoded2.description);
   });
 
-  it('setOfferDecodedDetails() :: should handle regular (non zero) amount offer', () => {
+  it('setOfferDecodedDetails() :: should handle regular (non zero) amount offer when fiatConversion is disabled', () => {
+    const offerDecoded = {
+      offer_id: null,
+      amount: 25000,
+      description: 'description',
+      vendor: 'vendor'
+    };
+    component.offerDecoded = offerDecoded;
+    component.selNode = {
+      fiatConversion: false
+    };
+
+    component.setOfferDecodedDetails();
+
+    expect(component.zeroAmtOffer).toBe(false);
+    expect(component.offerDecoded.amount).toBe(offerDecoded.amount);
+    expect(component.offerAmount).toBe(offerDecoded.amount);
+    expect(component.offerDescription).toBe(offerDecoded.description);
+    expect(component.offerVendor).toBe(offerDecoded.vendor);
+    expect(component.offerDecodedHint).toBe('Sending: ' + offerDecoded.amount + ' Sats | Description: ' + offerDecoded.description);
   });
 
   it('setOfferDecodedDetails() :: should show proper Sats and Description when fiatConversion is enabled', () => {
+    const offerDecoded = {
+      offer_id: null,
+      amount: 25000,
+      description: 'description',
+      vendor: 'vendor'
+    };
+    const convertResponse = {
+      symbol: 'SATS',
+      OTHER: 10
+    };
+    component.offerDecoded = offerDecoded;
+    component.selNode = {
+      fiatConversion: true,
+      currencyUnits: ['BTC', 'btc', 'SATS']
+    };
+    const convertCurrencySpy = spyOn(commonService, 'convertCurrency').and.returnValue(of(convertResponse));
+
+    component.setOfferDecodedDetails();
+
+    expect(convertCurrencySpy).toHaveBeenCalledTimes(1);
+
+    expect(component.zeroAmtOffer).toBe(false);
+    expect(component.offerDecoded.amount).toBe(offerDecoded.amount);
+    expect(component.offerAmount).toBe(offerDecoded.amount);
+    expect(component.offerDescription).toBe(offerDecoded.description);
+    expect(component.offerVendor).toBe(offerDecoded.vendor);
+    // TODO:
+    expect(component.offerDecodedHint).toBe('Sending: ' + offerDecoded.amount + ' Sats (SATS) | Description: ' + offerDecoded.description);
   });
 
   it('setOfferDecodedDetails() :: should show error when fiatConversion is enabled, but the conversion fails', () => {
+    const offerDecoded = {
+      offer_id: null,
+      amount: 25000,
+      description: 'description',
+      vendor: 'vendor'
+    };
+    const convertResponse = {
+      symbol: 'SATS',
+      OTHER: 10
+    };
+    component.offerDecoded = offerDecoded;
+    component.selNode = {
+      fiatConversion: true,
+      currencyUnits: ['BTC', 'btc', 'SATS']
+    };
+    const convertCurrencySpy = spyOn(commonService, 'convertCurrency').and.returnValue(throwError(() => new Error('Error')));
+
+    component.setOfferDecodedDetails();
+
+    expect(convertCurrencySpy).toHaveBeenCalledTimes(1);
+
+    expect(component.zeroAmtOffer).toBe(false);
+    expect(component.offerDecoded.amount).toBe(offerDecoded.amount);
+    expect(component.offerAmount).toBe(offerDecoded.amount);
+    expect(component.offerDescription).toBe(offerDecoded.description);
+    expect(component.offerVendor).toBe(offerDecoded.vendor);
+    expect(component.offerDecodedHint).toBe('Sending: ' + offerDecoded.amount + ' Sats | Description: ' + offerDecoded.description + '. Unable to convert currency.');
   });
 
   it('setPaymentDecodedDetails() :: should show proper hint for zero amount Invoice', () => {
