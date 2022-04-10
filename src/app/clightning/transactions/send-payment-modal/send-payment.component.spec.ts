@@ -607,6 +607,8 @@ describe('CLLightningSendPaymentsComponent', () => {
   });
 
   it('onSendPayment() :: INVOICE: should handle negative inputs', () => {
+    const reqMarkAsTouched = spyOn((component as any).paymentReq.control, 'markAsTouched');
+    const amtMarkAsTouched = spyOn(component.paymentAmt.control, 'markAsTouched');
     const sendPaymentSpy = spyOn(component, 'sendPayment');
     const resetInvoiceDetailsSpy = spyOn(component, 'resetInvoiceDetails');
     const decodePaymentSpy = spyOn((component as any).dataService, 'decodePayment');
@@ -625,11 +627,14 @@ describe('CLLightningSendPaymentsComponent', () => {
       { paymentRequest: 'paymentRequest', zeroAmtInvoice: false, paymentAmount: 10 },
       { paymentRequest: 'paymentRequest', zeroAmtInvoice: true, paymentAmount: null },
       { paymentRequest: 'paymentRequest', zeroAmtInvoice: true, paymentAmount: 0 }
-    ].map((ip) => {
+    ].map((ip, index) => {
       component.paymentRequest = ip.paymentRequest;
       component.zeroAmtInvoice = ip.zeroAmtInvoice;
       component.paymentAmount = ip.paymentAmount;
-      component.onSendPayment();
+      const returnValue = component.onSendPayment();
+      expect(returnValue).toBe(true);
+      expect(reqMarkAsTouched).toHaveBeenCalledTimes(index + 1);
+      expect(amtMarkAsTouched).toHaveBeenCalledTimes(index + 1);
       expect(sendPaymentSpy).not.toHaveBeenCalled();
       expect(resetInvoiceDetailsSpy).not.toHaveBeenCalled();
       expect(decodePaymentSpy).not.toHaveBeenCalled();
@@ -679,13 +684,14 @@ describe('CLLightningSendPaymentsComponent', () => {
       component.paymentRequest = ip.paymentRequest;
       component.zeroAmtInvoice = ip.zeroAmtInvoice;
       component.paymentAmount = ip.paymentAmount;
+      component.paymentDecoded = null;
 
       component.onSendPayment();
 
+      expect(sendPaymentSpy).not.toHaveBeenCalled();
       expect(resetInvoiceDetailsSpy).toHaveBeenCalledTimes(index + 1);
       expect(decodePaymentSpy).toHaveBeenCalledTimes(index + 1);
       expect(setPaymentDecodedDetailsSpy).toHaveBeenCalledTimes(index + 1);
-      expect(sendPaymentSpy).not.toHaveBeenCalled();
       expect(component.paymentDecoded).toBe(decodedPayment);
       return 1;
     });
@@ -722,15 +728,12 @@ describe('CLLightningSendPaymentsComponent', () => {
   });
 
   it('onSendPayment() :: OFFER: should handle negative inputs', () => {
-    const decodedRequest = {
-      type: 'bolt12 offer'
-    };
     component.offerAmt = { control: new FormControl() } as any;
     const sendPaymentSpy = spyOn(component, 'sendPayment');
     const resetOfferDetailsSpy = spyOn(component, 'resetOfferDetails');
     const reqMarkAsTouched = spyOn((component as any).offerReq.control, 'markAsTouched');
     const amtMarkAsTouched = spyOn(component.offerAmt.control, 'markAsTouched');
-    const decodePaymentSpy = spyOn((component as any).dataService, 'decodePayment').and.returnValue(of(decodedRequest));
+    const decodePaymentSpy = spyOn((component as any).dataService, 'decodePayment');
 
     component.paymentType = PaymentTypes.OFFER;
 
@@ -743,8 +746,9 @@ describe('CLLightningSendPaymentsComponent', () => {
       component.zeroAmtOffer = ip.zeroAmtOffer;
       component.offerAmount = ip.offerAmount;
 
-      component.onSendPayment();
+      const returnValue = component.onSendPayment();
 
+      expect(returnValue).toBe(true);
       expect(reqMarkAsTouched).toHaveBeenCalledTimes(index + 1);
       expect(amtMarkAsTouched).toHaveBeenCalledTimes(index + 1);
       expect(sendPaymentSpy).not.toHaveBeenCalled();
@@ -799,6 +803,7 @@ describe('CLLightningSendPaymentsComponent', () => {
       component.offerRequest = ip.offerRequest;
       component.zeroAmtOffer = ip.zeroAmtOffer;
       component.offerAmount = ip.offerAmount;
+      component.offerDecoded = null;
 
       component.onSendPayment();
 
@@ -982,11 +987,8 @@ describe('CLLightningSendPaymentsComponent', () => {
   });
 
   it('onPaymentRequestEntry() :: INVOICE: should just reset Invoice details, when event length < 100', () => {
-    const decodedRequest = {
-      type: 'bolt12 offer'
-    };
     const resetInvoiceDetailsSpy = spyOn(component, 'resetInvoiceDetails');
-    const decodePaymentSpy = spyOn((component as any).dataService, 'decodePayment').and.returnValue(of(decodedRequest));
+    const decodePaymentSpy = spyOn((component as any).dataService, 'decodePayment');
     const event = 'paymentRequest';
 
     component.paymentType = PaymentTypes.INVOICE;
@@ -999,10 +1001,12 @@ describe('CLLightningSendPaymentsComponent', () => {
 
   it('onPaymentRequestEntry() :: INVOICE: should reset Invoice details and decode new Request, when event length > 100', () => {
     const decodedRequest = {
-      type: 'bolt12 offer'
+      type: 'bolt11 invoice',
+      payment_hash: 'hash'
     };
     const resetInvoiceDetailsSpy = spyOn(component, 'resetInvoiceDetails');
     const decodePaymentSpy = spyOn((component as any).dataService, 'decodePayment').and.returnValue(of(decodedRequest));
+    const setPaymentDecodedDetailsSpy = spyOn(component, 'setPaymentDecodedDetails');
     const event = 'abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz';
 
     component.paymentType = PaymentTypes.INVOICE;
@@ -1011,13 +1015,29 @@ describe('CLLightningSendPaymentsComponent', () => {
     expect(component.paymentRequest).toBe(event);
     expect(resetInvoiceDetailsSpy).toHaveBeenCalledTimes(1);
     expect(decodePaymentSpy).toHaveBeenCalledTimes(1);
-    // TODO: Test inside subscribe
+    expect(component.paymentDecoded).toBe(decodedRequest);
+    expect(setPaymentDecodedDetailsSpy).toHaveBeenCalledTimes(1);
   });
 
   it('onPaymentRequestEntry() :: INVOICE: should handle bolt12 offer selection mismatch', () => {
-  });
+    const decodedRequest = {
+      type: 'bolt12 offer',
+      offer_id: 'offer_id'
+    };
+    const resetInvoiceDetailsSpy = spyOn(component, 'resetInvoiceDetails');
+    const decodePaymentSpy = spyOn((component as any).dataService, 'decodePayment').and.returnValue(of(decodedRequest));
+    const setPaymentDecodedDetailsSpy = spyOn(component, 'setPaymentDecodedDetails');
+    const event = 'abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz';
 
-  it('onPaymentRequestEntry() :: INVOICE: should setPaymentDecodedDetails for proper payment', () => {
+    component.paymentType = PaymentTypes.INVOICE;
+    component.onPaymentRequestEntry(event);
+
+    expect(component.paymentRequest).toBe(event);
+    expect(resetInvoiceDetailsSpy).toHaveBeenCalledTimes(1);
+    expect(decodePaymentSpy).toHaveBeenCalledTimes(1);
+    expect(component.paymentDecodedHint).toBe('ERROR: Select Offer option to pay the bolt12 offer invoice.');
+    expect(component.paymentDecoded).toBe(null);
+    expect(setPaymentDecodedDetailsSpy).not.toHaveBeenCalled();
   });
 
   it('onPaymentRequestEntry() :: OFFER: should just reset Decoded Offer, when event length < 100 ', () => {
@@ -1036,9 +1056,11 @@ describe('CLLightningSendPaymentsComponent', () => {
   it('onPaymentRequestEntry() :: OFFER: should reset Decoded Offer and decode new Request, when event length > 100', () => {
     const decodedRequest = {
       type: 'bolt12 offer',
+      offer_id: 'offer_id'
     };
     const resetOfferDetailsSpy = spyOn(component, 'resetOfferDetails');
     const decodePaymentSpy = spyOn((component as any).dataService, 'decodePayment').and.returnValue(of(decodedRequest));
+    const setOfferDecodedDetailsSpy = spyOn(component, 'setOfferDecodedDetails');
     const event = 'abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz';
 
     component.paymentType = PaymentTypes.OFFER;
@@ -1047,10 +1069,29 @@ describe('CLLightningSendPaymentsComponent', () => {
     expect(component.offerRequest).toBe(event);
     expect(resetOfferDetailsSpy).toHaveBeenCalledTimes(1);
     expect(decodePaymentSpy).toHaveBeenCalledTimes(1);
-    // TODO: Test inside subscribe
+    expect(component.offerDecoded).toBe(decodedRequest);
+    expect(setOfferDecodedDetailsSpy).toHaveBeenCalledTimes(1);
   });
 
   it('onPaymentRequestEntry() :: OFFER: should handle bolt11 invoice selection mismatch', () => {
+    const decodedRequest = {
+      type: 'bolt11 invoice',
+      payment_hash: 'hash'
+    };
+    const resetOfferDetailsSpy = spyOn(component, 'resetOfferDetails');
+    const decodePaymentSpy = spyOn((component as any).dataService, 'decodePayment').and.returnValue(of(decodedRequest));
+    const setOfferDecodedDetailsSpy = spyOn(component, 'setOfferDecodedDetails');
+    const event = 'abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz';
+
+    component.paymentType = PaymentTypes.OFFER;
+    component.onPaymentRequestEntry(event);
+
+    expect(component.offerRequest).toBe(event);
+    expect(resetOfferDetailsSpy).toHaveBeenCalledTimes(1);
+    expect(decodePaymentSpy).toHaveBeenCalledTimes(1);
+    expect(component.offerDecoded).toBe(null);
+    expect(component.offerDecodedHint).toBe('ERROR: Select Invoice option to pay the bolt11 invoice.');
+    expect(setOfferDecodedDetailsSpy).not.toHaveBeenCalled();
   });
 
   it('resetOfferDetails() :: should reset all offer related fields', () => {
@@ -1062,7 +1103,7 @@ describe('CLLightningSendPaymentsComponent', () => {
     expect(component.offerDecodedHint).toEqual('');
     expect(component.zeroAmtOffer).toBe(false);
     expect(component.paymentError).toEqual('');
-    // expect(component.offerReq.control.errors).toBe(null); //can't access Private var
+    expect((component as any).offerReq.control.errors).toBe(null);
   });
 
   it('resetInvoiceDetails() :: should reset all invoice related fields', () => {
@@ -1073,7 +1114,7 @@ describe('CLLightningSendPaymentsComponent', () => {
     expect(component.paymentDecodedHint).toEqual('');
     expect(component.zeroAmtInvoice).toBe(false);
     expect(component.paymentError).toEqual('');
-    // expect(component.paymentReq.control.errors).toBe(null); //can't access Private var
+    expect((component as any).paymentReq.control.errors).toBe(null);
   });
 
   it('onAmountChange(): should set proper amount in decoded object', () => {
@@ -1181,12 +1222,13 @@ describe('CLLightningSendPaymentsComponent', () => {
 
     expect(component.zeroAmtOffer).toBe(false);
     expect(component.offerDecoded.amount).toBe(offerDecoded.amount);
-    expect(component.offerAmount).toBe(offerDecoded.amount);
+    expect(component.offerAmount).toBe(offerDecoded.amount / 1000);
     expect(component.offerDescription).toBe(offerDecoded.description);
     expect(component.offerVendor).toBe(offerDecoded.vendor);
     expect(component.offerDecodedHint).toBe('Sending: ' + offerDecoded.amount + ' Sats | Description: ' + offerDecoded.description);
   });
 
+  // Check?
   it('setOfferDecodedDetails() :: should show proper Sats and Description when fiatConversion is enabled', () => {
     const offerDecoded = {
       offer_id: null,
@@ -1249,15 +1291,78 @@ describe('CLLightningSendPaymentsComponent', () => {
   });
 
   it('setPaymentDecodedDetails() :: should show proper hint for zero amount Invoice', () => {
+    const paymentDecoded = {
+      created_at: new Date().getTime(),
+      msatoshi: null,
+      description: 'description'
+    };
+    component.paymentDecoded = paymentDecoded;
+
+    component.setPaymentDecodedDetails();
+
+    expect(component.paymentDecoded.msatoshi).toBe(0);
+    expect(component.zeroAmtInvoice).toBe(true);
+    expect(component.paymentDecodedHint).toBe('Zero Amount Invoice | Memo: ' + paymentDecoded.description);
   });
 
   it('setPaymentDecodedDetails() :: should handle proper hint for regular (non zero) Invoice', () => {
+    const paymentDecoded = {
+      msatoshi: 25000,
+      description: 'description'
+    };
+    component.selNode = {
+      fiatConversion: false
+    };
+    const convertCurrencySpy = spyOn(commonService, 'convertCurrency');
+    component.paymentDecoded = paymentDecoded;
+
+    component.setPaymentDecodedDetails();
+
+    expect(component.zeroAmtInvoice).toBe(false);
+    expect(convertCurrencySpy).not.toHaveBeenCalled();
+    expect(component.paymentDecodedHint).toBe(`Sending: ${paymentDecoded.msatoshi / 1000} Sats | Memo: ${paymentDecoded.description}`);
   });
 
   it('setPaymentDecodedDetails() :: should show proper Sats and Description when fiatConversion is enabled', () => {
+    const paymentDecoded = {
+      msatoshi: 25000,
+      description: 'description'
+    };
+    const convertResponse = {
+      symbol: 'SATS',
+      OTHER: 10
+    };
+    component.selNode = {
+      fiatConversion: true,
+      currencyUnits: ['BTC', 'btc', 'SATS']
+    };
+    const convertCurrencySpy = spyOn(commonService, 'convertCurrency').and.returnValue(of(convertResponse));
+    component.paymentDecoded = paymentDecoded;
+
+    component.setPaymentDecodedDetails();
+
+    expect(component.zeroAmtInvoice).toBe(false);
+    expect(convertCurrencySpy).toHaveBeenCalledTimes(1);
+    expect(component.paymentDecodedHint).toBe(`Sending: ${paymentDecoded.msatoshi / 1000} Sats (${convertResponse.symbol} ${convertResponse.OTHER}) | Memo: ${paymentDecoded.description}`);
   });
 
   it('setPaymentDecodedDetails() :: should show error when fiatConversion is enabled, but the conversion fails', () => {
+    const paymentDecoded = {
+      msatoshi: 25000,
+      description: 'description'
+    };
+    component.selNode = {
+      fiatConversion: true,
+      currencyUnits: ['BTC', 'btc', 'SATS']
+    };
+    const convertCurrencySpy = spyOn(commonService, 'convertCurrency').and.returnValue(throwError(() => new Error('Error')));
+    component.paymentDecoded = paymentDecoded;
+
+    component.setPaymentDecodedDetails();
+
+    expect(component.zeroAmtInvoice).toBe(false);
+    expect(convertCurrencySpy).toHaveBeenCalledTimes(1);
+    expect(component.paymentDecodedHint).toBe(`Sending: ${paymentDecoded.msatoshi / 1000} Sats | Memo: ${paymentDecoded.description}. Unable to convert currency.`);
   });
 
   /** III. Function wise Test coverage - End */
