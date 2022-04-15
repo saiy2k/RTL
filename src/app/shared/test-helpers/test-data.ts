@@ -689,7 +689,12 @@ export const mockResponseData = {
     status: '500',
     message: 'Request Failed!',
     error: 'Request failed.'
+  },
+  invalidInvoiceError: {
+    "message": "500 - {\"error\":{\"type\":\"lightning\",\"message\":\"Invalid bolt11: Bad bech32 string\",\"name\":\"LightningError\",\"code\":-32602,\"fullType\":\"lightning\"}}",
+    "error": "Invalid bolt11: Bad bech32 string"
   }
+
 };
 
 export const mockActionsData = {

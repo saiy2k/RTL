@@ -1,5 +1,6 @@
 import { HttpResponse } from '@angular/common/http';
 import { BehaviorSubject, of, throwError } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 import { API_URL } from '../../../environments/environment';
 import { CLActions } from '../services/consts-enums-functions';
@@ -72,6 +73,15 @@ export class mockDataService {
     ) {
       mockResponseData.decodeEmptyPayment.num_satoshis = '0';
       return of(mockResponseData.decodeEmptyPayment);
+
+    // Invalid invoice
+    } else if (payment ===
+      'Alntb100u1ps7e3zdpp5epqx9v00ptsavrm56v4hr66akgvrswh4mtsm42wx4rg7mxdfga8sdq523jhxapqf9h8vmmfvdjscqp2sp52mhqxcux05vpccgf50zvjvln6vzhkv369jwt0scu6zjhfg2h988qrzjqt4dhk0824eh29salzmyvam22379e0pwjkesw8kgz4fl3mpvagaccgy4vcqqqxcqqqqqqqlgqqqqqqgq9qrzjqgq20usw2yzfxc7t0u4qse07qujxf4rfmjs2cdxf2jan6j649dhf2gykavqqq8qqqyqqqqlgqqqqqqgq9q9qyyssqy8tp5d5r7w89yttrphlfwd5p4nyyl4gyjkgw6mmy3jp3kv8lqy9yc5vw3s4ht0t7tpykv74jhp49a46u4qm06gp43dx4hydvghwgfhgpwpwqj5'
+    ) {
+      console.log('Mock service :: Invaid Invoice');
+      return of(new Error()).pipe(
+        catchError((err) => throwError(() => new Error('Invalid bolt11: bad bech32 string')))
+      );
     } else {
       return throwError(() => mockResponseData.error);
     }
